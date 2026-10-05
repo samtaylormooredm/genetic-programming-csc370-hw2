@@ -6,14 +6,23 @@ import numpy as np
 ## that node if that are any
 
 ## Function for immutability
+import random
+
+
 @dataclass(frozen=True)
 class Node:
   kind: str
   value: object
   children: tuple = ()
 
+# Tree class?
+
 ## Established a division rule so that division by zero doesn't
 ## break fitness
+
+OPERATORS = ["+", "-", "*", "/"]
+  
+
 def division_rule(a, b):
     result = np.ones(len(b))
     for i in range(len(b)):
@@ -65,7 +74,19 @@ def to_string(node):
     if node.kind == "operator":
         return "(" + to_string(node.children[0]) + " " + node.value + " " + to_string(node.children[1]) + ")"
 
+# 
+def generate_random_terminal():
+    return # random operator in our list of operators
 
+# Generate random trees recursively
+    # make possible_operators a constant defined at top of class
+def generate_random_tree(max_depth, num_variables, current_depth=0):
+    # If we reach max depth, force terminal node
+    if current_depth == max_depth:
+        return generate_random_terminal(num_variables)
+    # otherwise randomly choose operator or 
+    if 
+    return 
     
 if __name__ == "__main__":
     x = np.array([
