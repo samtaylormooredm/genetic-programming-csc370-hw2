@@ -74,9 +74,15 @@ def to_string(node):
     if node.kind == "operator":
         return "(" + to_string(node.children[0]) + " " + node.value + " " + to_string(node.children[1]) + ")"
 
-# 
-def generate_random_terminal():
-    return # random operator in our list of operators
+# Generate random terminal node
+def generate_random_terminal(num_variables):
+    if random.random() < 0.5:
+        variable = random.randrange(num_variables)
+        return Node("variable", variable)
+
+    # NOTE: Possible range modification here
+    constant = random.randint(-10, 10)
+    return Node("constant", constant)
 
 # Generate random trees recursively
     # make possible_operators a constant defined at top of class
@@ -84,9 +90,25 @@ def generate_random_tree(max_depth, num_variables, current_depth=0):
     # If we reach max depth, force terminal node
     if current_depth == max_depth:
         return generate_random_terminal(num_variables)
-    # otherwise randomly choose operator or 
-    if 
-    return 
+    
+    # Otherwise randomly choose operator or terminal
+    # NOTE: Currnently set to 50% chance of being operator, adjust for future?
+    if random.random() < 0.5:
+        operator = random.choice(OPERATORS)
+
+        left = generate_random_tree(
+            max_depth,
+            num_variables,
+            current_depth + 1
+        )
+        right = generate_random_tree(
+            max_depth,
+            num_variables,
+            current_depth + 1
+        )
+        return Node("operator", operator, (left, right))
+
+    return generate_random_terminal(num_variables) 
     
 if __name__ == "__main__":
     x = np.array([
@@ -131,3 +153,13 @@ if __name__ == "__main__":
         print("size:", size(tree))
         print("depth:", depth(tree))
         print()
+
+    # Testing random tree generation
+        tree = generate_random_tree(
+        max_depth=3,
+        num_variables=3
+        )
+
+        print(to_string(tree))
+        print("size:", size(tree))
+        print("depth:", depth(tree))
