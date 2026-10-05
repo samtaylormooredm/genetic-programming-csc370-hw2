@@ -1,13 +1,7 @@
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
 
 import numpy as np
-
-## Node class, where a node can be a kind (operator, variable 
-## or constant), the value of that node, and the children of 
-## that node if that are any
-
-## Function for immutability
 
 
 @dataclass(frozen=True)
