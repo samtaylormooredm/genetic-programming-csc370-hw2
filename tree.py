@@ -68,24 +68,45 @@ def to_string(node):
 
     
 if __name__ == "__main__":
-    # Build the tree for ((x1 * x1) + 1)
-    x1_a = Node("variable", 0)
-    x1_b = Node("variable", 0)
-    times = Node("operator", "*", (x1_a, x1_b))
-    one = Node("constant", 1)
-    tree = Node("operator", "+", (times, one))
+    x = np.array([
+        [2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0]
+    ])
 
-    # Two data points from dataset 1, as a one-column table
-    x = np.array([[-0.66], [2.99]])
+    # x1
+    tree1 = Node("variable", 0)
 
-    print("evaluate:", evaluate(tree, x))     # [1.4356 9.9401]
-    print("size:", size(tree))                # 5
-    print("depth:", depth(tree))              # 2
-    print("to_string:", to_string(tree))      # ((x1 * x1) + 1)
+    # x1 + 3
+    tree2 = Node(
+        "operator",
+        "+",
+        (Node("variable", 0), Node("constant", 3))
+    )
 
-    # Division tests
-    zero_tree = Node("operator", "/", (Node("variable", 0), Node("constant", 0)))
-    print("x1 / 0:", evaluate(zero_tree, x))  # [1. 1.]
+    # x1 * x2
+    tree3 = Node(
+        "operator",
+        "*",
+        (Node("variable", 0), Node("variable", 1))
+    )
 
-    neg_tree = Node("operator", "/", (Node("variable", 0), Node("constant", -2)))
-    print("x1 / -2:", evaluate(neg_tree, x))  # [ 0.33  -1.495]
+    # (x1 + x2) * x3
+    tree4 = Node(
+        "operator",
+        "*",
+        (
+            Node(
+                "operator",
+                "+",
+                (Node("variable", 0), Node("variable", 1))
+            ),
+            Node("variable", 2)
+        )
+    )
+
+    for tree in [tree1, tree2, tree3, tree4]:
+        print(to_string(tree))
+        print("evaluation:", evaluate(tree, x))
+        print("size:", size(tree))
+        print("depth:", depth(tree))
+        print()
