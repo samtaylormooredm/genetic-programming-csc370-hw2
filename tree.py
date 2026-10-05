@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 import numpy as np
+import random
 
 ## Node class, where a node can be a kind (operator, variable 
 ## or constant), the value of that node, and the children of 
 ## that node if that are any
 
 ## Function for immutability
-import random
 
 
 @dataclass(frozen=True)
@@ -15,14 +15,10 @@ class Node:
   value: object
   children: tuple = ()
 
-# Tree class?
-
-## Established a division rule so that division by zero doesn't
-## break fitness
 
 OPERATORS = ["+", "-", "*", "/"]
   
-
+## Established a division rule so that division by zero doesn't
 def division_rule(a, b):
     result = np.ones(len(b))
     for i in range(len(b)):
@@ -154,12 +150,12 @@ if __name__ == "__main__":
         print("depth:", depth(tree))
         print()
 
-    # Testing random tree generation
-        tree = generate_random_tree(
-        max_depth=3,
-        num_variables=3
-        )
+    # # Testing random tree generation
+    tree = generate_random_tree(
+    max_depth=4,
+    num_variables=3
+    )
 
-        print(to_string(tree))
-        print("size:", size(tree))
-        print("depth:", depth(tree))
+    print(to_string(tree))
+    print("size:", size(tree))
+    print("depth:", depth(tree))
