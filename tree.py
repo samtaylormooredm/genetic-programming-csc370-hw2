@@ -120,64 +120,63 @@ def generate_population(num_trees, max_depth, num_variables):
     
     return population
     
+def print_tree(node, prefix="", is_left=True, is_root=True):
+    if node.kind == "variable":
+        label = "x" + str(node.value + 1)
+    else:
+        label = str(node.value)
+
+    if node.kind == "operator":
+        print_tree(
+            node.children[1],
+            prefix + ("" if is_root else ("│   " if is_left else "    ")),
+            False,
+            False
+        )
+
+    if is_root:
+        print(label)
+    else:
+        print(prefix + ("└── " if is_left else "┌── ") + label)
+
+    if node.kind == "operator":
+        print_tree(
+            node.children[0],
+            prefix + ("" if is_root else ("    " if is_left else "│   ")),
+            True,
+            False
+        )
+
 if __name__ == "__main__":
     x = np.array([
         [2.0, 3.0, 4.0],
         [5.0, 6.0, 7.0]
     ])
 
-    # x1
-    tree1 = Node("variable", 0)
-
-    # x1 + 3
-    tree2 = Node(
-        "operator",
-        "+",
-        (Node("variable", 0), Node("constant", 3))
+    # Test random tree generation
+    random_tree = generate_random_tree(
+        max_depth=4,
+        num_variables=3
     )
 
-    # x1 * x2
-    tree3 = Node(
-        "operator",
-        "*",
-        (Node("variable", 0), Node("variable", 1))
-    )
+    print("Random tree:")
+    print(to_string(random_tree))
+    print("evaluation:", evaluate(random_tree, x))
+    print("size:", size(random_tree))
+    print("depth:", depth(random_tree))
+    print()
 
-    # (x1 + x2) * x3
-    tree4 = Node(
-        "operator",
-        "*",
-        (
-            Node(
-                "operator",
-                "+",
-                (Node("variable", 0), Node("variable", 1))
-            ),
-            Node("variable", 2)
-        )
-    )
-
-    for tree in [tree1, tree2, tree3, tree4]:
-        print(to_string(tree))
-        print("evaluation:", evaluate(tree, x))
-        print("size:", size(tree))
-        print("depth:", depth(tree))
-        print()
-
-    # # Testing random tree generation
-    tree = generate_random_tree(
-    max_depth=4,
-    num_variables=3
-    )
-
-    # Testing random population generation
+    # Test random population generation
     population = generate_population(
-    num_trees=10,
-    max_depth=5,
-    num_variables=3
-)
+        num_trees=10,
+        max_depth=5,
+        num_variables=3
+    )
 
-    for tree in population:
-        print(to_string(tree))
-        print("size:", size(tree))
-        print("depth:", depth(tree))
+    print("Random population:")
+    for i, tree in enumerate(population, start=1):
+        print(f"\nTree {i}")
+        print("Expression:", to_string(tree))
+        print("Size:", size(tree))
+        print("Depth:", depth(tree))
+        print_tree(tree)
