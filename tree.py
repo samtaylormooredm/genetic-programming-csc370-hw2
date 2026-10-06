@@ -72,9 +72,18 @@ def generate_random_terminal(num_variables, integer_constants):
     Generate a random terminal node: a variable or an ephemeral random
     constant (ERC), each with equal probability.
 
+    Parameters
+    ----------
+    num_variables : int
+        Number of variables available for selection.
     integer_constants : bool
         True for whole-number constants (dataset 1),
         False for real-valued constants (dataset 2).
+
+    Returns
+    -------
+    Node
+        Random variable or constant node.
     """
     if random.random() < 0.5:
         return Node("variable", random.randrange(num_variables))
@@ -87,13 +96,37 @@ def generate_random_terminal(num_variables, integer_constants):
 
 def generate_grow_tree(max_depth, num_variables, integer_constants, current_depth=0):
     """
-    Grow method (Koza, 1992): each node is randomly an operator or a
-    terminal, so branches end at different depths.
+    Generate a random expression tree with the grow method, following
+    the random construction process in Koza's symbolic regression
+    tutorial: each node is randomly chosen to be an operator or a
+    terminal, and choosing a terminal ends that branch. Branches are
+    forced to end at max_depth.
+
+    Parameters
+    ----------
+    max_depth : int
+        Maximum allowed depth of the generated tree.
+    num_variables : int
+        Number of variables available for terminal nodes.
+    integer_constants : bool
+        True for whole-number constants, False for real-valued constants.
+    current_depth : int, optional
+        Current recursion depth. Defaults to 0.
+
+    Returns
+    -------
+    Node
+        Root node of the generated expression tree.
     """
+    # If we reach max depth, force a terminal node
     if current_depth == max_depth:
         return generate_random_terminal(num_variables, integer_constants)
 
-    if random.random() < 0.5:
+    # The root is always an operator (as in the tutorial's example, which
+    # starts by choosing a function for the root), so no tree is a single
+    # terminal. Below the root: 50% chance of an operator, 50% terminal.
+    # NOTE: potential area to adjust if needed
+    if current_depth == 0 or random.random() < 0.5:
         operator = random.choice(OPERATORS)
         left = generate_grow_tree(max_depth, num_variables, integer_constants, current_depth + 1)
         right = generate_grow_tree(max_depth, num_variables, integer_constants, current_depth + 1)
@@ -102,34 +135,31 @@ def generate_grow_tree(max_depth, num_variables, integer_constants, current_dept
     return generate_random_terminal(num_variables, integer_constants)
 
 
-def generate_full_tree(max_depth, num_variables, integer_constants, current_depth=0):
+def generate_population(num_trees, max_depth, num_variables, integer_constants):
     """
-    Full method (Koza, 1992): every branch reaches max_depth, so all
-    leaves sit on the bottom level.
-    """
-    if current_depth == max_depth:
-        return generate_random_terminal(num_variables, integer_constants)
+    Generate an initial population of random expression trees, each
+    built with the grow method.
 
-    operator = random.choice(OPERATORS)
-    left = generate_full_tree(max_depth, num_variables, integer_constants, current_depth + 1)
-    right = generate_full_tree(max_depth, num_variables, integer_constants, current_depth + 1)
-    return Node("operator", operator, (left, right))
+    Parameters
+    ----------
+    num_trees : int
+        Number of trees to generate.
+    max_depth : int
+        Maximum allowed depth of each tree.
+    num_variables : int
+        Number of variables available for terminal nodes.
+    integer_constants : bool
+        True for whole-number constants, False for real-valued constants.
 
-
-def generate_population(num_trees, min_depth, max_depth, num_variables, integer_constants):
-    """
-    Ramped half-and-half (Koza, 1992): cycles through depths
-    min_depth..max_depth, alternating full and grow on each pass so
-    every depth gets both methods.
+    Returns
+    -------
+    list of Node
+        Population of randomly generated expression trees.
     """
     population = []
-    depths = list(range(min_depth, max_depth + 1))
-    for i in range(num_trees):
-        d = depths[i % len(depths)]
-        if (i // len(depths)) % 2 == 0:
-            population.append(generate_full_tree(d, num_variables, integer_constants))
-        else:
-            population.append(generate_grow_tree(d, num_variables, integer_constants))
+    for _ in range(num_trees):
+        tree = generate_grow_tree(max_depth, num_variables, integer_constants)
+        population.append(tree)
     return population
 
 
@@ -138,7 +168,7 @@ def division_rule(a, b):
     Perform protected element-wise division.
 
     Values with denominators close to zero return 1 instead of
-    performing division.
+    performing division (Koza's protected division convention).
 
     Parameters
     ----------
@@ -288,10 +318,9 @@ if __name__ == "__main__":
     print("depth:", depth(random_tree))
     print()
 
-    # Test ramped half-and-half population
+    # Test random population generation (grow method)
     population = generate_population(
         num_trees=10,
-        min_depth=2,
         max_depth=5,
         num_variables=3,
         integer_constants=False
