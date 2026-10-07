@@ -287,6 +287,15 @@ def subtree_crossover (parent1, parent2):
     child2 = replace_subtree(parent2, j, get_subtree(parent1, i))
     return child1, child2
 
+## Mean Squared Error
+def mse(tree, x, y):
+    predict = evaluate(tree, x)
+    err = predict - y
+    err_squared = err * err
+    result = np.mean(err_squared)
+    if not np.isfinite(result):
+        return np.inf
+    return result
 
 
 def print_tree(node, prefix="", is_left=True, is_root=True):
@@ -381,7 +390,7 @@ if __name__ == "__main__":
     ))
     for i in range(size(ex)):
         print(i, to_string(get_subtree(ex, i)))
-    print(to_string(replace_subtree(ex, 4, Node("constant", 7))))   # ((x1 * x1) + 7)
+    print(to_string(replace_subtree(ex, 4, Node("constant", 7))))
 
     # Immutability tests: operators must never change their parents
     for _ in range(100):
@@ -396,3 +405,8 @@ if __name__ == "__main__":
         assert to_string(p2) == before2
         assert size(child1) + size(child2) == size(p1) + size(p2)
     print("100 immutability checks passed")
+
+    t = Node("operator", "*", (Node("variable", 0), Node("constant", 2)))
+    x_test = np.array([[1.0], [2.0], [3.0]])
+    y_test = np.array([3.0, 4.0, 3.0])
+    print("MSE:", mse(t, x_test, y_test)) 
