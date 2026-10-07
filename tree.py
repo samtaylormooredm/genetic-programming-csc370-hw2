@@ -250,6 +250,45 @@ def to_string(node):
     if node.kind == "operator":
         return "(" + to_string(node.children[0]) + " " + node.value + " " + to_string(node.children[1]) + ")"
     
+## Mutations, crossovers, reproductions
+
+## Returns subtree at a given number
+def get_subtree(node, index):
+    if index == 0:
+        return node
+    index = index - 1
+    left_size = size(node.children[0])
+    if index < left_size:
+        return get_subtree(node.children[0], index)
+    else:
+        return get_subtree(node.children[1], index - left_size)
+## Returns a new tree, with a subtree at a given index
+def replace_subtree(node, index, new_subtree):
+    if index == 0:
+        return new_subtree
+    index = index - 1
+    left_size = size(node.children[0])
+    if index < left_size:
+        new_left = replace_subtree(node.children[0], index, new_subtree)
+        return Node("operator", node.value, (new_left, node.children[1]))
+    else:
+        new_right = replace_subtree(node.children[1], index - left_size, new_subtree)
+        return Node("operator", node.value, (node.children[0], new_right))
+## Subtree mutation, max_new_depth should be relatively small value so its a modest change
+def subtree_mutation(tree, max_new_depth, num_variables, integer_constants):
+    index = random.randrange(size(tree))
+    new_subtree = generate_grow_tree(max_new_depth, num_variables, integer_constants)
+    return replace_subtree(tree, index, new_subtree)
+## Subtree crossover
+def subtree_crossover (parent1, parent2):
+    i = random.randrange(size(parent1))
+    j = random.randrange(size(parent2))
+    child1 = replace_subtree(parent1, i, get_subtree(parent2, j))
+    child2 = replace_subtree(parent2, j, get_subtree(parent1, i))
+    return child1, child2
+
+
+
 def print_tree(node, prefix="", is_left=True, is_root=True):
     """
     Print an expression tree in a sideways visual format.
@@ -333,3 +372,27 @@ if __name__ == "__main__":
         print("Size:", size(tree))
         print("Depth:", depth(tree))
         print_tree(tree)
+
+        # Test subtree helpers on a tree with known node numbers
+    print("\nSubtree helper test:")
+    ex = Node("operator", "+", (
+        Node("operator", "*", (Node("variable", 0), Node("variable", 0))),
+        Node("constant", 1)
+    ))
+    for i in range(size(ex)):
+        print(i, to_string(get_subtree(ex, i)))
+    print(to_string(replace_subtree(ex, 4, Node("constant", 7))))   # ((x1 * x1) + 7)
+
+    # Immutability tests: operators must never change their parents
+    for _ in range(100):
+        p1 = generate_grow_tree(4, 3, True)
+        p2 = generate_grow_tree(4, 3, True)
+        before1, before2 = to_string(p1), to_string(p2)
+
+        child1, child2 = subtree_crossover(p1, p2)
+        mutant = subtree_mutation(p1, 2, 3, True)
+
+        assert to_string(p1) == before1
+        assert to_string(p2) == before2
+        assert size(child1) + size(child2) == size(p1) + size(p2)
+    print("100 immutability checks passed")
