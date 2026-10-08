@@ -164,9 +164,6 @@ def division_rule(a, b):
     """
     Perform protected element-wise division.
 
-    Values with denominators close to zero return 1 instead of
-    performing division.
-
     Parameters
     ----------
     a : numpy.ndarray
@@ -292,6 +289,84 @@ def print_tree(node, prefix="", is_left=True, is_root=True):
             True,
             False
         )
+
+def get_paths(node, current_path=()):
+    """
+    Collect paths to every node in the tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the subtree.
+    current_path : tuple of int, optional
+        Path to this node. Defaults to ().
+
+    Returns
+    -------
+    list of tuple of int
+        Paths to this node and its descendants.
+    """
+    paths = [current_path]
+
+    for i, child in enumerate(node.children):
+        paths.extend(get_paths(child, current_path + (i,)))
+
+    return paths
+
+
+def get_subtree(node, path):
+    """
+    Retrieve the subtree at a given path.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the tree.
+    path : tuple of int
+        Child indices to follow. () selects the root.
+
+    Returns
+    -------
+    Node
+        Selected subtree.
+    """
+    for child_index in path:
+        node = node.children[child_index]
+
+    return node
+
+
+def replace_subtree(node, path, replacement):
+    """
+    Replace a subtree while preserving the original tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the original tree.
+    path : tuple of int
+        Child indices to follow. () replaces the root.
+    replacement : Node
+        Replacement subtree.
+
+    Returns
+    -------
+    Node
+        Tree containing the replacement.
+    """
+    if not path:
+        return replacement
+
+    child_index = path[0]
+    children = list(node.children)
+
+    children[child_index] = replace_subtree(
+        children[child_index],
+        path[1:],
+        replacement,
+    )
+
+    return Node(node.kind, node.value, tuple(children))
 
 if __name__ == "__main__":
     x = np.array([
