@@ -36,3 +36,12 @@ def split_data(x, y, train_fraction=0.8, seed=42):
         x[test_indices],
         y[test_indices],
     )
+
+if __name__ == "__main__":
+    x, y = load_dataset("dataset1.csv")
+    x_train, y_train, x_test, y_test = split_data(x, y)
+
+    print("Training inputs:", x_train.shape)
+    print("Training targets:", y_train.shape)
+    print("Test inputs:", x_test.shape)
+    print("Test targets:", y_test.shape)
