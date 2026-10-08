@@ -399,35 +399,38 @@ def mutate(node, max_depth, num_variables):
     return replace_subtree(node, path, replacement)
 
 if __name__ == "__main__":
-    x = np.array([
-        [2.0, 3.0, 4.0],
-        [5.0, 6.0, 7.0]
-    ])
+    # Test mutation with reproducible randomness.
+    random.seed(42)
+    max_depth = 5
 
-    # Test random tree generation
-    random_tree = generate_random_tree(
-        max_depth=4,
-        num_variables=3
+    original = Node(
+        "operator",
+        "+",
+        (Node("variable", 0), Node("constant", 3)),
     )
+    original_expression = to_string(original)
+    test_x = np.array([[1.0], [2.0], [3.0]])
 
-    print("Random tree:")
-    print(to_string(random_tree))
-    print("evaluation:", evaluate(random_tree, x))
-    print("size:", size(random_tree))
-    print("depth:", depth(random_tree))
-    print()
+    for i in range(1, 11):
+        mutated = mutate(
+            original,
+            max_depth=max_depth,
+            num_variables=1,
+        )
 
-    # Test random population generation
-    population = generate_population(
-        num_trees=10,
-        max_depth=5,
-        num_variables=3
-    )
+        depth_ok = depth(mutated) <= max_depth
+        original_unchanged = to_string(original) == original_expression
 
-    print("Random population:")
-    for i, tree in enumerate(population, start=1):
-        print(f"\nTree {i}")
-        print("Expression:", to_string(tree))
-        print("Size:", size(tree))
-        print("Depth:", depth(tree))
-        print_tree(tree)
+        print(f"\nMutation {i}")
+        print("Original:", to_string(original))
+        print("Mutated:", to_string(mutated))
+        print("Size:", size(mutated))
+        print("Depth:", depth(mutated))
+        print("Predictions:", evaluate(mutated, test_x))
+        print("Depth limit respected:", depth_ok)
+        print("Original unchanged:", original_unchanged)
+
+        assert depth_ok, "Mutation exceeded the depth limit."
+        assert original_unchanged, "Mutation changed the original tree."
+
+    print("\nAll mutation checks passed.")
