@@ -164,9 +164,6 @@ def division_rule(a, b):
     """
     Perform protected element-wise division.
 
-    Values with denominators close to zero return 1 instead of
-    performing division.
-
     Parameters
     ----------
     a : numpy.ndarray
@@ -293,36 +290,147 @@ def print_tree(node, prefix="", is_left=True, is_root=True):
             False
         )
 
+def get_paths(node, current_path=()):
+    """
+    Collect paths to every node in the tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the subtree.
+    current_path : tuple of int, optional
+        Path to this node. Defaults to ().
+
+    Returns
+    -------
+    list of tuple of int
+        Paths to this node and its descendants.
+    """
+    paths = [current_path]
+
+    for i, child in enumerate(node.children):
+        paths.extend(get_paths(child, current_path + (i,)))
+
+    return paths
+
+
+def get_subtree(node, path):
+    """
+    Retrieve the subtree at a given path.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the tree.
+    path : tuple of int
+        Child indices to follow. () selects the root.
+
+    Returns
+    -------
+    Node
+        Selected subtree.
+    """
+    for child_index in path:
+        node = node.children[child_index]
+
+    return node
+
+
+def replace_subtree(node, path, replacement):
+    """
+    Replace a subtree while preserving the original tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the original tree.
+    path : tuple of int
+        Child indices to follow. () replaces the root.
+    replacement : Node
+        Replacement subtree.
+
+    Returns
+    -------
+    Node
+        Tree containing the replacement.
+    """
+    if not path:
+        return replacement
+
+    child_index = path[0]
+    children = list(node.children)
+
+    children[child_index] = replace_subtree(
+        children[child_index],
+        path[1:],
+        replacement,
+    )
+
+    return Node(node.kind, node.value, tuple(children))
+
+def mutate(node, max_depth, num_variables):
+    """
+    Replace a random subtree with a randomly generated tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the original tree.
+    max_depth : int
+        Maximum depth allowed for the resulting tree.
+    num_variables : int
+        Number of available input variables.
+
+    Returns
+    -------
+    Node
+        Mutated tree.
+    """
+    path = random.choice(get_paths(node))
+
+    # Each step in the path uses one level of the depth limit.
+    remaining_depth = max_depth - len(path)
+
+    replacement = generate_random_tree(
+        max_depth=remaining_depth,
+        num_variables=num_variables,
+    )
+
+    return replace_subtree(node, path, replacement)
+
 if __name__ == "__main__":
-    x = np.array([
-        [2.0, 3.0, 4.0],
-        [5.0, 6.0, 7.0]
-    ])
+    # Test mutation with reproducible randomness.
+    random.seed(42)
+    max_depth = 5
 
-    # Test random tree generation
-    random_tree = generate_random_tree(
-        max_depth=4,
-        num_variables=3
+    original = Node(
+        "operator",
+        "+",
+        (Node("variable", 0), Node("constant", 3)),
     )
+    original_expression = to_string(original)
+    test_x = np.array([[1.0], [2.0], [3.0]])
 
-    print("Random tree:")
-    print(to_string(random_tree))
-    print("evaluation:", evaluate(random_tree, x))
-    print("size:", size(random_tree))
-    print("depth:", depth(random_tree))
-    print()
+    for i in range(1, 11):
+        mutated = mutate(
+            original,
+            max_depth=max_depth,
+            num_variables=1,
+        )
 
-    # Test random population generation
-    population = generate_population(
-        num_trees=10,
-        max_depth=5,
-        num_variables=3
-    )
+        depth_ok = depth(mutated) <= max_depth
+        original_unchanged = to_string(original) == original_expression
 
-    print("Random population:")
-    for i, tree in enumerate(population, start=1):
-        print(f"\nTree {i}")
-        print("Expression:", to_string(tree))
-        print("Size:", size(tree))
-        print("Depth:", depth(tree))
-        print_tree(tree)
+        print(f"\nMutation {i}")
+        print("Original:", to_string(original))
+        print("Mutated:", to_string(mutated))
+        print("Size:", size(mutated))
+        print("Depth:", depth(mutated))
+        print("Predictions:", evaluate(mutated, test_x))
+        print("Depth limit respected:", depth_ok)
+        print("Original unchanged:", original_unchanged)
+
+        assert depth_ok, "Mutation exceeded the depth limit."
+        assert original_unchanged, "Mutation changed the original tree."
+
+    print("\nAll mutation checks passed.")
