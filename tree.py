@@ -368,6 +368,36 @@ def replace_subtree(node, path, replacement):
 
     return Node(node.kind, node.value, tuple(children))
 
+def mutate(node, max_depth, num_variables):
+    """
+    Replace a random subtree with a randomly generated tree.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the original tree.
+    max_depth : int
+        Maximum depth allowed for the resulting tree.
+    num_variables : int
+        Number of available input variables.
+
+    Returns
+    -------
+    Node
+        Mutated tree.
+    """
+    path = random.choice(get_paths(node))
+
+    # Each step in the path uses one level of the depth limit.
+    remaining_depth = max_depth - len(path)
+
+    replacement = generate_random_tree(
+        max_depth=remaining_depth,
+        num_variables=num_variables,
+    )
+
+    return replace_subtree(node, path, replacement)
+
 if __name__ == "__main__":
     x = np.array([
         [2.0, 3.0, 4.0],
