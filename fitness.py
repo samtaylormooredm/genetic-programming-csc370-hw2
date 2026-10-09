@@ -8,6 +8,33 @@ def fitness(node, x, y, complexity_weight=0):
     """
     Score a tree using mean squared error and a size penalty.
     Return a float with the fitness score. Lower = better.
+
+    Implements linear parametric parsimony pressure (Luke & Panait 
+    2006, Sec. 5, p. 10), whose general form is g = x*f + y*s, where
+    f is the raw fitness and s is the tree size. We have that f = MSE,
+    s = size(node), x = 1, and y = complexity_weight
+
+    Luke & Panait found this penalty , combined with a depth limit of 
+    17, reduced bloat without hurting fitness. The right weight depends 
+    on the scale of the fitness values (Sec. 5, p. 10), so 
+    complexity_weight is tuned separately for each dataset.
+
+    Parameters
+    ----------
+    node : Node
+        Root of the tree to score.
+    x : numpy.ndarray
+        Input data, one row per data point.
+    y : numpy.ndarray
+        True target values, one per row.
+    complexity_weight : float, optional
+        Penalty per node (y in Luke & Panait's formula). Defaults to 0,
+        meaning no size penalty.
+
+    Returns
+    -------
+    float 
+        Penalized fitness. Lower is better; inf for invalid trees.
     """
     predictions = evaluate(node, x)
 
@@ -16,6 +43,8 @@ def fitness(node, x, y, complexity_weight=0):
         return float("inf")
     
     mse = mean_squared_error(y, predictions)
+
+    # Size penalty: linear parametric parsimony pressure (Luke & Panait 2006)
     score = mse + complexity_weight * size(node)
 
     if not np.isfinite(score):
