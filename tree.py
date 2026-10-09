@@ -398,6 +398,41 @@ def mutate(node, max_depth, num_variables):
 
     return replace_subtree(node, path, replacement)
 
+def crossover(parent1, parent2, max_depth):
+    """
+    Swap random subtrees between two parents.
+
+    Parameters
+    ----------
+    parent1, parent2 : Node
+        Roots of the parent trees.
+    max_depth : int
+        Maximum allowed offspring depth.
+
+    Returns
+    -------
+    tuple of Node
+        Two offspring. An offspring exceeding the depth limit
+        is replaced with its original parent.
+    """
+    path1 = random.choice(get_paths(parent1))
+    path2 = random.choice(get_paths(parent2))
+
+    subtree1 = get_subtree(parent1, path1)
+    subtree2 = get_subtree(parent2, path2)
+
+    child1 = replace_subtree(parent1, path1, subtree2)
+    child2 = replace_subtree(parent2, path2, subtree1)
+
+    # Keep the original parent if its offspring grows too deep.
+    if depth(child1) > max_depth:
+        child1 = parent1
+
+    if depth(child2) > max_depth:
+        child2 = parent2
+
+    return child1, child2
+
 if __name__ == "__main__":
     # Test mutation with reproducible randomness.
     random.seed(42)
