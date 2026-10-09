@@ -434,38 +434,39 @@ def crossover(parent1, parent2, max_depth):
     return child1, child2
 
 if __name__ == "__main__":
-    # Test mutation with reproducible randomness.
     random.seed(42)
     max_depth = 5
 
-    original = Node(
+    parent1 = Node(
         "operator",
         "+",
         (Node("variable", 0), Node("constant", 3)),
     )
-    original_expression = to_string(original)
+    parent2 = Node(
+        "operator",
+        "*",
+        (Node("variable", 0), Node("constant", 2)),
+    )
+
+    original1 = to_string(parent1)
+    original2 = to_string(parent2)
     test_x = np.array([[1.0], [2.0], [3.0]])
 
     for i in range(1, 11):
-        mutated = mutate(
-            original,
-            max_depth=max_depth,
-            num_variables=1,
-        )
+        child1, child2 = crossover(parent1, parent2, max_depth)
 
-        depth_ok = depth(mutated) <= max_depth
-        original_unchanged = to_string(original) == original_expression
+        print(f"\nCrossover {i}")
+        print("Parent 1:", to_string(parent1))
+        print("Parent 2:", to_string(parent2))
 
-        print(f"\nMutation {i}")
-        print("Original:", to_string(original))
-        print("Mutated:", to_string(mutated))
-        print("Size:", size(mutated))
-        print("Depth:", depth(mutated))
-        print("Predictions:", evaluate(mutated, test_x))
-        print("Depth limit respected:", depth_ok)
-        print("Original unchanged:", original_unchanged)
+        for number, child in enumerate((child1, child2), start=1):
+            print(f"Child {number}:", to_string(child))
+            print("Depth:", depth(child))
+            print("Predictions:", evaluate(child, test_x))
 
-        assert depth_ok, "Mutation exceeded the depth limit."
-        assert original_unchanged, "Mutation changed the original tree."
+            assert depth(child) <= max_depth
 
-    print("\nAll mutation checks passed.")
+        assert to_string(parent1) == original1
+        assert to_string(parent2) == original2
+
+    print("\nAll crossover checks passed.")
