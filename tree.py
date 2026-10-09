@@ -396,6 +396,16 @@ def mutate(node, max_depth, num_variables):
         num_variables=num_variables,
     )
 
+    # NOTE: Currently allows pretty significant mutations, could possibly test with having
+    # replacement subtree be at most depth 2:
+    # remaining_depth = max_depth - len(path)
+    # replacement_depth = min(remaining_depth, 2)
+
+    # replacement = generate_random_tree(
+    #     max_depth=replacement_depth,
+    #     num_variables=num_variables,
+    # )
+
     return replace_subtree(node, path, replacement)
 
 def crossover(parent1, parent2, max_depth):
@@ -435,7 +445,10 @@ def crossover(parent1, parent2, max_depth):
 
 if __name__ == "__main__":
     random.seed(42)
+
     max_depth = 5
+    num_variables = 1
+    x = np.array([[1.0], [2.0], [3.0]])
 
     parent1 = Node(
         "operator",
@@ -448,31 +461,60 @@ if __name__ == "__main__":
         (Node("variable", 0), Node("constant", 2)),
     )
 
-    original1 = to_string(parent1)
-    original2 = to_string(parent2)
-    test_x = np.array([[1.0], [2.0], [3.0]])
+    # Check evaluation and tree measurements.
+    assert np.allclose(evaluate(parent1, x), [4, 5, 6])
+    assert size(parent1) == 3
+    assert depth(parent1) == 1
 
-    print("Parent 1:", original1)
-    print_tree(parent1)
+    # Check protected division.
+    assert np.allclose(
+        division_rule(np.array([6.0, 6.0]), np.array([2.0, 0.0])),
+        [3, 1],
+    )
 
-    print("\nParent 2:", original2)
-    print_tree(parent2)
+    # Check subtree helpers.
+    assert get_paths(parent1) == [(), (0,), (1,)]
+    assert get_subtree(parent1, (1,)) == Node("constant", 3)
+    replaced = replace_subtree(parent1, (1,), Node("constant", 7))
+    assert to_string(replaced) == "(x1 + 7)"
 
-    for i in range(1, 11):
-        child1, child2 = crossover(parent1, parent2, max_depth)
+    # Check generation, mutation, and crossover on varied trees.
+    population = generate_population(20, max_depth, num_variables)
+    assert len(population) == 20
 
-        print(f"\n--- Crossover {i} ---")
+    originals = tuple(population)
 
-        for number, child in enumerate((child1, child2), start=1):
-            print(f"\nChild {number}:", to_string(child))
-            print_tree(child)
-            print("Size:", size(child))
-            print("Depth:", depth(child))
-            print("Predictions:", evaluate(child, test_x))
+    for tree in population:
+        assert depth(tree) <= max_depth
+        assert evaluate(tree, x).shape == (len(x),)
 
-            assert depth(child) <= max_depth, "Depth limit exceeded."
+        mutated = mutate(tree, max_depth, num_variables)
+        assert depth(mutated) <= max_depth
+        assert evaluate(mutated, x).shape == (len(x),)
 
-        assert to_string(parent1) == original1, "Parent 1 changed."
-        assert to_string(parent2) == original2, "Parent 2 changed."
+        child1, child2 = crossover(
+            tree, random.choice(population), max_depth
+        )
+        for child in (child1, child2):
+            assert depth(child) <= max_depth
+            assert evaluate(child, x).shape == (len(x),)
 
-    print("\nAll crossover checks passed.")
+    # Check that the original trees remain unchanged.
+    assert tuple(population) == originals
+    assert to_string(parent1) == "(x1 + 3)"
+    assert to_string(parent2) == "(x1 * 2)"
+
+    # Display one example of each operation.
+    mutated = mutate(parent1, max_depth, num_variables)
+    child1, child2 = crossover(parent1, parent2, max_depth)
+
+    for label, tree in [
+        ("Original", parent1),
+        ("Mutated", mutated),
+        ("Crossover child 1", child1),
+        ("Crossover child 2", child2),
+    ]:
+        print(f"\n{label}: {to_string(tree)}")
+        print_tree(tree)
+
+    print("\nAll tree checks passed.")
