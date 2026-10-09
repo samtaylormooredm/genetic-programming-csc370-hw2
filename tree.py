@@ -67,7 +67,7 @@ def evaluate(node, x):
             return division_rule(left, right)
 
 
-def generate_random_terminal(num_variables):
+def generate_random_terminal(num_variables, integer_constants=True):
     """
     Generate a random terminal node.
 
@@ -78,6 +78,9 @@ def generate_random_terminal(num_variables):
     ----------
     num_variables : int
         Number of variables available for selection.
+    integer_constants : bool, optional
+        True for whole number constants (dataset 1),
+        False for real valued constants (dataset 2). Defaults to True
 
     Returns
     -------
@@ -91,10 +94,11 @@ def generate_random_terminal(num_variables):
 
     # For constants, generate random # btwn -10 and 10
     # NOTE: Could be potential place to adjust for experimentation
-    constant = random.randint(-10, 10)
-    return Node("constant", constant)
+    if integer_constants:
+        return Node("constant", random.randint(-10,10))
+    return Node("constant", random.uniform(-10,10))
 
-def generate_random_tree(max_depth, num_variables, current_depth=0):
+def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
     """
     Generate a random symbolic expression tree recursively.
 
@@ -104,6 +108,8 @@ def generate_random_tree(max_depth, num_variables, current_depth=0):
         Maximum allowed depth of the generated tree.
     num_variables : int
         Number of variables available for terminal nodes.
+    integer_constants : bool, optional
+        True for whole number constants, False for real valued constants.
     current_depth : int, optional
         Current recursion depth. Defaults to 0.
 
@@ -113,7 +119,7 @@ def generate_random_tree(max_depth, num_variables, current_depth=0):
         Root node of the generated expression tree.
     """
     # If we reach max depth, force terminal node
-    if current_depth == max_depth:
+    if current_depth >= max_depth:
         return generate_random_terminal(num_variables)
     
     # Otherwise randomly choose operator or terminal
@@ -124,18 +130,20 @@ def generate_random_tree(max_depth, num_variables, current_depth=0):
         left = generate_random_tree(
             max_depth,
             num_variables,
+            integer_constants,
             current_depth + 1
         )
         right = generate_random_tree(
             max_depth,
             num_variables,
+            integer_constants,
             current_depth + 1
         )
         return Node("operator", operator, (left, right))
 
-    return generate_random_terminal(num_variables) 
+    return generate_random_terminal(num_variables, integer_constants) 
 
-def generate_population(num_trees, max_depth, num_variables):
+def generate_population(num_trees, max_depth, num_variables, integer_constants=True):
     """
     Generate an initial population of random expression trees.
 
@@ -147,6 +155,9 @@ def generate_population(num_trees, max_depth, num_variables):
         Maximum allowed depth of each tree.
     num_variables : int
         Number of variables available for terminal nodes.
+    integer_constants : bool, optional
+        true for whole number constants, False for real
+        valued constants
 
     Returns
     -------
@@ -155,7 +166,9 @@ def generate_population(num_trees, max_depth, num_variables):
     """
     population = []
     for _ in range(num_trees):
-        tree = generate_random_tree(max_depth, num_variables)
+        tree = generate_random_tree(max_depth, num_variables, integer_constants)
+        while tree.kind != "operator":
+            tree = generate_random_tree(max_depth, num_variables, integer_constants)
         population.append(tree)
     
     return population
@@ -368,7 +381,7 @@ def replace_subtree(node, path, replacement):
 
     return Node(node.kind, node.value, tuple(children))
 
-def mutate(node, max_depth, num_variables):
+def mutate(node, max_depth, num_variables, integer_constants=True):
     """
     Replace a random subtree with a randomly generated tree.
 
@@ -380,6 +393,8 @@ def mutate(node, max_depth, num_variables):
         Maximum depth allowed for the resulting tree.
     num_variables : int
         Number of available input variables.
+    integer_constants : bool, optional
+        True for whole-number constants, False for real-valued constants.
 
     Returns
     -------
@@ -394,9 +409,34 @@ def mutate(node, max_depth, num_variables):
     replacement = generate_random_tree(
         max_depth=remaining_depth,
         num_variables=num_variables,
+        integer_constants = integer_constants
     )
 
     return replace_subtree(node, path, replacement)
+
+def crossover(parent1, parent2):
+    """
+    Subtree crossover where a random point in each 
+    parent is picked, then swap the subtrees there.
+
+    Parameters
+    ----------
+    parent1, parent2: Node
+        Roots of the two parent trees.
+    
+    Returns
+    -------
+    tuple of Node
+        The two children.
+
+    """
+    path1 = random.choice(get_paths(parent1))
+    path2 = random.choice(get_paths(parent2))
+
+    child1 = replace_subtree(parent1, path1, get_subtree(parent2, path2))
+    child2 = replace_subtree(parent2, path2, get_subtree(parent1, path1))
+
+    return child1, child2
 
 if __name__ == "__main__":
     # Test mutation with reproducible randomness.
@@ -434,3 +474,38 @@ if __name__ == "__main__":
         assert original_unchanged, "Mutation changed the original tree."
 
     print("\nAll mutation checks passed.")
+
+    for _ in range(100):
+        p1 = generate_random_tree(4, 3)
+        p2 = generate_random_tree(4, 3)
+        before1, before2 = to_string(p1), to_string(p2)
+ 
+        child1, child2 = crossover(p1, p2)
+ 
+        assert to_string(p1) == before1, "Crossover changed parent 1."
+        assert to_string(p2) == before2, "Crossover changed parent 2."
+        assert size(child1) + size(child2) == size(p1) + size(p2)
+ 
+    print("All crossover checks passed.")
+ 
+    # Test population: real-valued constants, no single-node trees
+    population = generate_population(
+        num_trees=20, max_depth=5, num_variables=3, integer_constants=False
+    )
+    assert all(tree.kind == "operator" for tree in population)
+    print("Population example:", to_string(population[0]))
+    print("All population checks passed.")    
+
+        # Real-valued constants actually appear when requested
+    def constants_in(node):
+        if node.kind == "constant":
+            return [node.value]
+        found = []
+        for child in node.children:
+            found += constants_in(child)
+        return found
+
+    real_pop = generate_population(50, 5, 3, integer_constants=False)
+    all_constants = [c for tree in real_pop for c in constants_in(tree)]
+    assert any(isinstance(c, float) for c in all_constants), "No real-valued constants generated."
+    print("All constant-type checks passed.")
