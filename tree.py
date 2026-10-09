@@ -452,21 +452,27 @@ if __name__ == "__main__":
     original2 = to_string(parent2)
     test_x = np.array([[1.0], [2.0], [3.0]])
 
+    print("Parent 1:", original1)
+    print_tree(parent1)
+
+    print("\nParent 2:", original2)
+    print_tree(parent2)
+
     for i in range(1, 11):
         child1, child2 = crossover(parent1, parent2, max_depth)
 
-        print(f"\nCrossover {i}")
-        print("Parent 1:", to_string(parent1))
-        print("Parent 2:", to_string(parent2))
+        print(f"\n--- Crossover {i} ---")
 
         for number, child in enumerate((child1, child2), start=1):
-            print(f"Child {number}:", to_string(child))
+            print(f"\nChild {number}:", to_string(child))
+            print_tree(child)
+            print("Size:", size(child))
             print("Depth:", depth(child))
             print("Predictions:", evaluate(child, test_x))
 
-            assert depth(child) <= max_depth
+            assert depth(child) <= max_depth, "Depth limit exceeded."
 
-        assert to_string(parent1) == original1
-        assert to_string(parent2) == original2
+        assert to_string(parent1) == original1, "Parent 1 changed."
+        assert to_string(parent2) == original2, "Parent 2 changed."
 
     print("\nAll crossover checks passed.")
