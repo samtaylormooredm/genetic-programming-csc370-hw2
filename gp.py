@@ -1,10 +1,11 @@
-import json, csv
+import json
 import random 
+import numpy as np 
 
+from fitness import fitness
 from data import load_dataset, split_data
 from tree import crossover, mutate, depth, size, to_string, generate_population
 
-variables  = json.load(open("dataset1_variables.json"))
 
 def tournament_select(population, scores, k):
     contestants = random.sample(range(len(population)), k)
@@ -45,16 +46,37 @@ def make_children(population, scores, variables):
 
 def next_gen(population, scores, variables):
     new_population = []
-    while len(new_population) < size(population):
+    while len(new_population) < variables["population_size"]:
         new_population.extend(make_children(population, scores, variables))
-    return size(new_population)
+    return new_population[:variables["population_size"]]
 
 def diversity(population):
-    unique = len(to_string(population).values)
-    return unique / size(population)
+    unique = len(set(to_string(tree) for tree in population))
+    return unique / len(population)
 
 def run(variables_path):
-    variables = json.load(open("dataset1_variables.json"))
+    # Initialize with variables and splitting dataset
+    variables = json.load(open(variables.path))
     random.seed(variables["seed"])
-    x, y = csv.load(open(variables["dataset"]))
+    x, y = load_dataset(variables["dataset"])
     x_train, y_train, x_test, y_test = split_data(x, y)
+    # Starting population
+    population = generate_population(len(population), 
+                                     variables["init_max_depth"], 
+                                     variables["num_variables"], 
+                                     variables["integer_constants"])
+    # Best-so-far tracking 
+    best_so_far = None
+    best_so_far_score = np.inf
+
+    # Evolution
+    for gen in range(0, len(population) - 1):
+        # use fitness function to determine scores for each tree in a generation
+        scores = set([fitness(tree, x_train, y_train, variables["complexity_weight"])] 
+                     for tree in population)
+        # iterate through the scores until the lowest is found
+        best_index = 0
+        if scores[best_index] < best_so_far_score:
+            best_so_far_score = scores[best_index]
+            best_so_far = population[best_index]
+        
