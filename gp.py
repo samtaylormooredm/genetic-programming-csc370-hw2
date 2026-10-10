@@ -1,3 +1,15 @@
+"""
+Genetic programming loop for symbolic regression.
+
+Evolves a population of expression trees using tournament selection,
+subtree crossover, subtree mutation, and reproduction, and logs
+per-generation statistics to a CSV file. All settings are read from a
+JSON config file (e.g. dataset1_variables.json).
+
+Run from the command line:
+    python gp.py dataset1_variables.json
+"""
+
 import json
 import random 
 import numpy as np 
@@ -8,6 +20,29 @@ from tree import crossover, mutate, depth, size, to_string, generate_population
 
 
 def tournament_select(population, scores, k):
+    """
+    Select one parent using tournament selection.
+
+    Picks k distinct trees at random and returns the one with the lowest
+    (best) fitness score. Tournament selection is one of the standard
+    selection methods described in Koza's tutorial; Luke & Panait (2006)
+    used a tournament size of 7.
+
+    Parameters
+    ----------
+    population : list of Node
+        Current population of trees.
+    scores : list of float
+        Fitness score of each tree, in the same order as population.
+        Lower is better.
+    k : int
+        Tournament size (number of trees competing).
+
+    Returns
+    -------
+    Node
+        The winning tree.
+    """
     contestants = random.sample(range(len(population)), k)
 
     winner = contestants[0]
@@ -18,6 +53,33 @@ def tournament_select(population, scores, k):
     return population[winner]
 
 def make_children(population, scores, variables):
+    """
+    Create one or two children using crossover, mutation, or reproduction.
+
+    The operation is chosen at random according to the rates in the
+    config: crossover with probability crossover_rate, mutation with
+    probability mutation_rate, and reproduction (an unchanged copy)
+    otherwise. Default rates follow Koza's tutorial (about 90% crossover,
+    1% mutation, the rest reproduction).
+
+    Crossover children deeper than depth_limit are replaced by a copy of
+    their parent (depth limiting, Luke & Panait 2006).
+
+    Parameters
+    ----------
+    population : list of Node
+        Current population of trees.
+    scores : list of float
+        Fitness score of each tree, in the same order as population.
+    variables : dict
+        Run settings loaded from the config file.
+
+    Returns
+    -------
+    list of Node
+        Two children for crossover, or one child for mutation or
+        reproduction.
+    """
     k = variables["tournament_size"]
     depth_limit = variables["depth_limit"]
 
@@ -45,12 +107,50 @@ def make_children(population, scores, variables):
         return [parent]
 
 def next_gen(population, scores, variables):
+    """
+    Build the next generation of the population.
+
+    Repeatedly creates children with make_children until the new
+    population reaches population_size, then trims any extra child
+    (crossover can produce one more tree than is needed).
+
+    Parameters
+    ----------
+    population : list of Node
+        Current population of trees.
+    scores : list of float
+        Fitness score of each tree, in the same order as population.
+    variables : dict
+        Run settings loaded from the config file.
+
+    Returns
+    -------
+    list of Node
+        The new population, exactly population_size trees long.
+    """
     new_population = []
     while len(new_population) < variables["population_size"]:
         new_population.extend(make_children(population, scores, variables))
     return new_population[:variables["population_size"]]
 
 def diversity(population):
+    """
+    Measure population diversity as the fraction of unique trees.
+
+    Two trees count as the same if their string forms are identical.
+    A value of 1.0 means every tree is different; values near 0 mean
+    the population has converged on a few trees (loss of diversity).
+
+    Parameters
+    ----------
+    population : list of Node
+        Current population of trees.
+
+    Returns
+    -------
+    float
+        Number of unique trees divided by population size, between 0 and 1.
+    """
     unique = len(set(to_string(tree) for tree in population))
     return unique / len(population)
 
