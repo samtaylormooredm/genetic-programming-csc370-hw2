@@ -72,7 +72,8 @@ def generate_random_terminal(num_variables, integer_constants=True):
     Generate a random terminal node.
 
     A terminal node is either a variable or an integer constant.
-    Each type is selected with equal probability.
+    Each type is selected with equal probability. Koza'a tutorial suggests
+    constants -5.0 to 5.0, where we use -10 to 10.
 
     Parameters
     ----------
@@ -100,7 +101,12 @@ def generate_random_terminal(num_variables, integer_constants=True):
 
 def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
     """
-    Generate a random symbolic expression tree recursively.
+    Generate a random symbolic expression tree recursively. This follows
+    the random construction process in Koza's tutorial where each node is randomly
+    chosen to be a function or a terminal. They are also built depth-first from left
+    to right, and the selection of a terminal ends the path (Koza tutorial, p. 3).
+
+    Branches are forced to end at max_depth.
 
     Parameters
     ----------
@@ -145,7 +151,9 @@ def generate_random_tree(max_depth, num_variables, integer_constants=True, curre
 
 def generate_population(num_trees, max_depth, num_variables, integer_constants=True):
     """
-    Generate an initial population of random expression trees.
+    Generate an initial population of random expression trees. Trees that come
+    out as a single terminal at the root are regenerated so every starting tree
+    has an operator at its root.
 
     Parameters
     ----------
@@ -175,7 +183,11 @@ def generate_population(num_trees, max_depth, num_variables, integer_constants=T
 
 def division_rule(a, b):
     """
-    Perform protected element-wise division.
+    Perform protected element-wise division, per Koza's protected division "returns
+    a value of 1 when division by 0 is attempted (including 0 divided by 0), but 
+    otherwise returns the quotient of its two arguments" (Koza tutorial, p. 1).
+    Denominators with absolute value below 1e-6 as zero, so near-zero denominators
+    also return 1.
 
     Parameters
     ----------
@@ -383,7 +395,10 @@ def replace_subtree(node, path, replacement):
 
 def mutate(node, max_depth, num_variables, integer_constants=True):
     """
-    Replace a random subtree with a randomly generated tree.
+    Replace a random subtree with a randomly generated tree, as in Koza's tutorial
+    where a random point is picked, the subtree rooted there is deleted, and a 
+    subtree "randomly grown in the same that the individuals of the initial
+    population were originally created" is inserted (Koza tutorial, p. 4).
 
     Parameters
     ----------
@@ -426,7 +441,10 @@ def mutate(node, max_depth, num_variables, integer_constants=True):
 
 def crossover(parent1, parent2, max_depth):
     """
-    Swap random subtrees between two parents.
+    Swap random subtrees between two parents as in Koza' tutorial where one 
+    point is randomly picked in each parent, and the subtrees at those points
+    are swapped (Koza tutorial, pp. 4-5). Offspring deeper than max_depth are 
+    replaced by their parent (Luke & Panait 2006, Sec. 3).
 
     Parameters
     ----------

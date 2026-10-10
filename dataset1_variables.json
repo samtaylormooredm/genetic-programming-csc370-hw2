@@ -9,7 +9,14 @@
   "depth_limit": 17,
   "tournament_size": 7,
   "crossover_rate": 0.9,
-  "mutation_rate": 0.05,
+  "mutation_rate": 0.01,
   "complexity_weight": 0.0,
-  "log_file": "results/dataset1_seed370.csv"
+  "log_file": "results/dataset1_seed370.csv",
+  "_sources": {
+    "crossover_rate": "Koza tutorial, p. 2: crossover on about 90% of the population",
+    "mutation_rate": "Koza tutorial, p. 2: mutation on about 1% of the population; reproduction takes the rest (tutorial: about 8%)",
+    "depth_limit": "Luke & Panait 2006, Sec. 3 (p. 6): children deeper than 17 replaced by a copy of their parent",
+    "tournament_size": "Luke & Panait 2006, Sec. 3 (p. 6): tournament selection of size 7",
+    "complexity_weight": "Luke & Panait 2006, Sec. 5 (p. 10): linear parametric parsimony pressure; tuned per dataset"
+  }
 }
