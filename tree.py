@@ -101,12 +101,8 @@ def generate_random_terminal(num_variables, integer_constants=True):
 
 def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
     """
-    Generate a random symbolic expression tree recursively. This follows
-    the random construction process in Koza's tutorial where each node is randomly
-    chosen to be a function or a terminal. They are also built depth-first from left
-    to right, and the selection of a terminal ends the path (Koza tutorial, p. 3).
-
-    Branches are forced to end at max_depth.
+    Generate a random symbolic expression tree recursively. Branches are forced
+    to end at max_depth.
 
     Parameters
     ----------
@@ -126,7 +122,7 @@ def generate_random_tree(max_depth, num_variables, integer_constants=True, curre
     """
     # If we reach max depth, force terminal node
     if current_depth >= max_depth:
-        return generate_random_terminal(num_variables)
+        return generate_random_terminal(num_variables, integer_constants)
     
     # Otherwise randomly choose operator or terminal
     # NOTE: Currently set to 50% chance of being operator, potential area to adjust if needed
@@ -183,11 +179,7 @@ def generate_population(num_trees, max_depth, num_variables, integer_constants=T
 
 def division_rule(a, b):
     """
-    Perform protected element-wise division, per Koza's protected division "returns
-    a value of 1 when division by 0 is attempted (including 0 divided by 0), but 
-    otherwise returns the quotient of its two arguments" (Koza tutorial, p. 1).
-    Denominators with absolute value below 1e-6 as zero, so near-zero denominators
-    also return 1.
+    Perform protected element-wise division.
 
     Parameters
     ----------
@@ -201,10 +193,8 @@ def division_rule(a, b):
     numpy.ndarray
         Result of protected element-wise division.
     """
-    result = np.ones(len(b))
-    for i in range(len(b)):
-        if abs(b[i]) >= 1e-6:
-            result[i] = a[i] / b[i]
+    result = np.ones_like(a, dtype=float)
+    np.divide(a, b, out=result, where=np.abs(b) >= 1e-6)
     return result
 
 
@@ -395,10 +385,7 @@ def replace_subtree(node, path, replacement):
 
 def mutate(node, max_depth, num_variables, integer_constants=True):
     """
-    Replace a random subtree with a randomly generated tree, as in Koza's tutorial
-    where a random point is picked, the subtree rooted there is deleted, and a 
-    subtree "randomly grown in the same that the individuals of the initial
-    population were originally created" is inserted (Koza tutorial, p. 4).
+    Replace a random subtree with a randomly generated tree.
 
     Parameters
     ----------
@@ -441,10 +428,7 @@ def mutate(node, max_depth, num_variables, integer_constants=True):
 
 def crossover(parent1, parent2, max_depth):
     """
-    Swap random subtrees between two parents as in Koza' tutorial where one 
-    point is randomly picked in each parent, and the subtrees at those points
-    are swapped (Koza tutorial, pp. 4-5). Offspring deeper than max_depth are 
-    replaced by their parent (Luke & Panait 2006, Sec. 3).
+    Swap random subtrees between two parents.
 
     Parameters
     ----------

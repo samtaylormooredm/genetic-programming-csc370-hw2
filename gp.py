@@ -59,12 +59,6 @@ def make_children(population, scores, variables):
     """
     Create one or two children using crossover, mutation, or reproduction.
 
-    The operation is chosen at random according to the rates in the
-    variables: crossover with probability crossover_rate, mutation with
-    probability mutation_rate, and reproduction (an unchanged copy)
-    otherwise. Default rates follow Koza's tutorial (about 90% crossover,
-    1% mutation, the rest reproduction).
-
     Crossover children deeper than depth_limit are replaced by a copy of
     their parent (depth limiting, Luke & Panait 2006).
 
@@ -158,17 +152,6 @@ def run(variables_path):
     """
     Run one complete GP experiment.
 
-    Loads the config and data, splits the data into training and test
-    sets, creates the starting population, and evolves it for the
-    configured number of generations. Fitness is computed on the
-    training data only.
-
-    The best tree seen in any generation is tracked and reported as the
-    result of the run: "This best-so-far individual ... is designated as
-    the result of the run" (Koza tutorial, p. 5). Its error on the
-    held-out test data is computed only at the end, without the size
-    penalty, so the reported numbers are plain MSE.
-
     Parameters
     ----------
     variables_path : str
@@ -178,18 +161,6 @@ def run(variables_path):
     -------
     Node
         The best-so-far tree from the run.
-
-    Notes
-    -----
-    Writes one row per generation to the CSV file named by the config's
-    "log_file" setting, with columns: generation, best_fitness,
-    best_so_far_fitness, mean_fitness, median_fitness, best_size,
-    mean_size, mean_depth, and diversity. Mean and median fitness are
-    computed over finite scores only, so invalid trees (score inf) do
-    not distort them.
-
-    Prints progress every 10 generations, then the best formula, its
-    size, and its training and test MSE.
     """
 
     # Initialize with variables and splitting dataset
