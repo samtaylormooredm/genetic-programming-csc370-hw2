@@ -16,6 +16,7 @@ import numpy as np
 import os
 import csv
 import sys
+import time
 
 from fitness import fitness
 from data import load_dataset, split_data
@@ -239,4 +240,9 @@ def run(variables_path):
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else "dataset1_variables.json"
+
+    start = time.perf_counter()
     run(path)
+    elapsed = time.perf_counter() - start
+
+    print(f"Runtime: {elapsed:.2f} seconds ({elapsed / 60:.2f} minutes)")
