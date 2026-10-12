@@ -156,7 +156,7 @@ def run(variables_path):
     Parameters
     ----------
     variables_path : str
-        Path to the JSON config file (e.g. "dataset1_variables.json").
+        Path to the JSON config file ("variables.json").
 
     Returns
     -------
@@ -165,22 +165,44 @@ def run(variables_path):
     """
 
     # Initialize with variables and splitting dataset
-    variables = json.load(open(variables_path))
+    with open(variables_path) as f:
+        variables = json.load(f)
+
     random.seed(variables["seed"])
     x, y = load_dataset(variables["dataset"])
+
+    # Determine the number of input variables from the CSV
+    variables["num_variables"] = x.shape[1]
+
+    # Build the results filename from the current settings
+    dataset_name = os.path.splitext(
+        os.path.basename(variables["dataset"])
+    )[0]
+    variables["log_file"] = variables["log_file"].format(
+        dataset=dataset_name,
+        seed=variables["seed"],
+        complexity_weight=variables["complexity_weight"],
+    )
+
     x_train, y_train, x_test, y_test = split_data(x, y)
+
     # Starting population
-    population = generate_population(variables["population_size"], 
-                                     variables["init_max_depth"], 
-                                     variables["num_variables"], 
-                                     variables["integer_constants"])
-    # Best-so-far tracking 
+    population = generate_population(
+        variables["population_size"],
+        variables["init_max_depth"],
+        variables["num_variables"],
+        variables["integer_constants"],
+    )
+
+    # Best-so-far tracking
     best_so_far = None
     best_so_far_score = np.inf
 
     # Make sure the results folder exists
     # create the folder that log_file lives in, if missing
-    os.makedirs("results", exist_ok=True)
+    log_dir = os.path.dirname(variables["log_file"])
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
 
     # Write one row per generation to the CSV file named by the config's
     # "log_file" setting, with various columns characteristic to each generation
@@ -188,23 +210,27 @@ def run(variables_path):
     with open(variables["log_file"], "w", newline="") as f:
         writer = csv.writer(f)
 
-        writer.writerow(["generation", "best_fitness", "best_so_far_fitness",
-                         "mean_fitness", "median_fitness", "best_size", "mean_size",
-                         "mean_depth", "diversity"])
+        writer.writerow([
+            "generation", "best_fitness", "best_so_far_fitness",
+            "mean_fitness", "median_fitness", "best_size", "mean_size",
+            "mean_depth", "diversity",
+        ])
 
         # Evolution
         for gen in range(variables["generations"]):
             # use fitness function to determine scores for each tree in a generation
-            scores = [fitness(tree, x_train, y_train, variables["complexity_weight"]) 
-                         for tree in population]
-            
+            scores = [
+                fitness(tree, x_train, y_train, variables["complexity_weight"])
+                for tree in population
+            ]
+
             # iterate through the scores until the lowest is found
             best_index = int(np.argmin(scores))
             if scores[best_index] < best_so_far_score:
                 best_so_far_score = scores[best_index]
                 best_so_far = population[best_index]
 
-            # Mean and median fitness are computed over finite scores only, so 
+            # Mean and median fitness are computed over finite scores only, so
             # invalid trees (score inf) do not distort them.
             finite = [score for score in scores if np.isfinite(score)]
             writer.writerow([
@@ -217,14 +243,15 @@ def run(variables_path):
                 np.mean([size(tree) for tree in population]),
                 np.mean([depth(tree) for tree in population]),
                 diversity(population),
-                ])
-            
+            ])
+
             # Print progress every 10 generations
             if gen % 10 == 0:
                 print("Generation", gen, "best so far:", best_so_far_score)
+
             # Run on next generation
             population = next_gen(population, scores, variables)
-    
+
     # Determine error on the fitness of the best scores of trees, between training
     # and testing groups
     train_mse = fitness(best_so_far, x_train, y_train)
