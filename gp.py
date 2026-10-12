@@ -240,5 +240,3 @@ def run(variables_path):
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else "dataset1_variables.json"
     run(path)
-    
-
