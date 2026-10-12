@@ -3,7 +3,6 @@ import numpy as np
 
 from tree import evaluate, size, Node
 
-# TODO: Currently start with weight of 0, update after initial tests
 def fitness(node, x, y, complexity_weight=0):
     """
     Score a tree using mean squared error and a size penalty.
