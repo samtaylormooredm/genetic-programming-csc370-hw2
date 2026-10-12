@@ -1,0 +1,21 @@
+{
+  "dataset": "dataset2.csv",
+  "integer_constants": false,
+  "seed": 370,
+  "population_size": 500,
+  "generations": 50,
+  "init_max_depth": 5,
+  "depth_limit": 17,
+  "tournament_size": 7,
+  "crossover_rate": 0.9,
+  "mutation_rate": 0.01,
+  "complexity_weight": 0.0001,
+  "log_file": "results/{dataset}_seed{seed}_penalty{complexity_weight}.csv",
+  "_sources": {
+    "crossover_rate": "Koza tutorial, p. 2: crossover on about 90% of the population",
+    "mutation_rate": "Koza tutorial, p. 2: mutation on about 1% of the population; reproduction takes the rest",
+    "depth_limit": "Luke & Panait 2006, Sec. 3 (p. 6): children deeper than 17 replaced by a copy of their parent",
+    "tournament_size": "Luke & Panait 2006, Sec. 3 (p. 6): tournament selection of size 7",
+    "complexity_weight": "Luke & Panait 2006, Sec. 5 (p. 10): linear parametric parsimony pressure; tuned per dataset"
+  }
+}
