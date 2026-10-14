@@ -149,7 +149,7 @@ def diversity(population):
     unique = len(set(to_string(tree) for tree in population))
     return unique / len(population)
 
-def run(variables_path):
+def run(variables_path, seed=None):
     """
     Run one complete GP experiment.
 
@@ -157,17 +157,21 @@ def run(variables_path):
     ----------
     variables_path : str
         Path to the JSON config file ("variables.json").
+    seed : int, optional
+        Overrides the seed in the config file. Used by multi_run.py to run
+        several independent runs. Defaults to None.
 
     Returns
     -------
-    Node
-        The best-so-far tree from the run.
+    tuple
+        (best-so-far tree, its training MSE, its test MSE)
     """
 
     # Initialize with variables and splitting dataset
     with open(variables_path) as f:
         variables = json.load(f)
-
+    if seed is not None:
+        variables["seed"] = seed
     random.seed(variables["seed"])
     x, y = load_dataset(variables["dataset"])
 
@@ -263,10 +267,10 @@ def run(variables_path):
     print("Train MSE:", train_mse)
     print("Test MSE:", test_mse)
 
-    return best_so_far
+    return best_so_far, train_mse, test_mse
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else "dataset1_variables.json"
+    path = sys.argv[1] if len(sys.argv) > 1 else "variables.json"
 
     start = time.perf_counter()
     run(path)
