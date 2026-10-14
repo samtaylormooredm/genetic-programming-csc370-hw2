@@ -186,6 +186,8 @@ def run(variables_path, seed=None):
         dataset=dataset_name,
         seed=variables["seed"],
         complexity_weight=variables["complexity_weight"],
+        population_size=variables["population_size"],
+        generations=variables["generations"],
     )
 
     x_train, y_train, x_test, y_test = split_data(x, y)
