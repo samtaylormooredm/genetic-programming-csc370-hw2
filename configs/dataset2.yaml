@@ -1,3 +1,6 @@
+# To run with terminal: python -u gp.py configs/dataset2.yaml
+
+
 dataset: dataset2.csv
 integer_constants: false
 
