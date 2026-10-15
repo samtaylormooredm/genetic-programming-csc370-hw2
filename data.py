@@ -8,10 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent
 def load_dataset(filename):
     """Load input variables and target values from a CSV."""
     data = np.loadtxt(
-        BASE_DIR / filename,
+        BASE_DIR / "data" / filename,
         delimiter=",",
         skiprows=1,
     )
+    
 
     # Seperate into inputs (x) and target values (y)
     # : selects every row. -1 selects only the last column

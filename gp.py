@@ -4,13 +4,13 @@ Genetic programming loop for symbolic regression.
 Evolves a population of expression trees using tournament selection,
 subtree crossover, subtree mutation, and reproduction, and logs
 per-generation statistics to a CSV file. All settings are read from a
-JSON config file (e.g. dataset1_variables.json).
+YAML config file (e.g. dataset1_variables.yaml).
 
 Run from the command line:
-    python gp.py dataset1_variables.json
+    python gp.py dataset1_variables.yaml
 """
 
-import json
+import yaml
 import random 
 import numpy as np 
 import os
@@ -149,128 +149,142 @@ def diversity(population):
     unique = len(set(to_string(tree) for tree in population))
     return unique / len(population)
 
-def run(variables_path, seed=None):
+def run(variables_path):
     """
-    Run one complete GP experiment.
+    Run GP experiments for the seeds listed in a YAML configuration.
 
     Parameters
     ----------
     variables_path : str
-        Path to the JSON config file ("variables.json").
-    seed : int, optional
-        Overrides the seed in the config file. Used by multi_run.py to run
-        several independent runs. Defaults to None.
+        Path to the YAML config file.
 
-    Returns
-    -------
-    tuple
-        (best-so-far tree, its training MSE, its test MSE)
+    Notes
+    -----
+    Writes one combined generation CSV with a seed column. Prints each
+    run's best formula, tree size, training/test MSE, and runtime.
     """
 
     # Initialize with variables and splitting dataset
     with open(variables_path) as f:
-        variables = json.load(f)
-    if seed is not None:
-        variables["seed"] = seed
-    random.seed(variables["seed"])
-    x, y = load_dataset(variables["dataset"])
+        variables = yaml.safe_load(f)
 
-    # Determine the number of input variables from the CSV
+    seeds = variables["seeds"]
+    x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
 
-    # Build the results filename from the current settings
+    # Use the same training/test rows for every seed
+    x_train, y_train, x_test, y_test = split_data(
+        x,
+        y,
+        train_fraction=variables["train_fraction"],
+        seed=variables["split_seed"],
+    )
+
+    # Build one results filename for the whole experiment
     dataset_name = os.path.splitext(
         os.path.basename(variables["dataset"])
     )[0]
-    variables["log_file"] = variables["log_file"].format(
+    log_file = variables["log_file"].format(
         dataset=dataset_name,
-        seed=variables["seed"],
         complexity_weight=variables["complexity_weight"],
+        population_size=variables["population_size"],
+        generations=variables["generations"],
     )
 
-    x_train, y_train, x_test, y_test = split_data(x, y)
-
-    # Starting population
-    population = generate_population(
-        variables["population_size"],
-        variables["init_max_depth"],
-        variables["num_variables"],
-        variables["integer_constants"],
-    )
-
-    # Best-so-far tracking
-    best_so_far = None
-    best_so_far_score = np.inf
-
-    # Make sure the results folder exists
-    # create the folder that log_file lives in, if missing
-    log_dir = os.path.dirname(variables["log_file"])
+    # Create the folder that log_file lives in, if missing
+    log_dir = os.path.dirname(log_file)
     if log_dir:
         os.makedirs(log_dir, exist_ok=True)
 
-    # Write one row per generation to the CSV file named by the config's
-    # "log_file" setting, with various columns characteristic to each generation
-
-    with open(variables["log_file"], "w", newline="") as f:
+    # Write all seeds to one CSV
+    with open(log_file, "w", newline="") as f:
         writer = csv.writer(f)
-
         writer.writerow([
-            "generation", "best_fitness", "best_so_far_fitness",
+            "seed", "generation", "best_fitness", "best_so_far_fitness",
             "mean_fitness", "median_fitness", "best_size", "mean_size",
             "mean_depth", "diversity",
         ])
 
-        # Evolution
-        for gen in range(variables["generations"]):
-            # use fitness function to determine scores for each tree in a generation
-            scores = [
-                fitness(tree, x_train, y_train, variables["complexity_weight"])
-                for tree in population
-            ]
+        for seed in seeds:
+            print(f"\n--- Seed {seed} ---")
+            start = time.perf_counter()
+            random.seed(seed)
 
-            # iterate through the scores until the lowest is found
-            best_index = int(np.argmin(scores))
-            if scores[best_index] < best_so_far_score:
-                best_so_far_score = scores[best_index]
-                best_so_far = population[best_index]
+            # Starting population
+            population = generate_population(
+                variables["population_size"],
+                variables["init_max_depth"],
+                variables["num_variables"],
+                variables["integer_constants"],
+            )
 
-            # Mean and median fitness are computed over finite scores only, so
-            # invalid trees (score inf) do not distort them.
-            finite = [score for score in scores if np.isfinite(score)]
-            writer.writerow([
-                gen,
-                scores[best_index],
-                best_so_far_score,
-                np.mean(finite),
-                np.median(finite),
-                size(population[best_index]),
-                np.mean([size(tree) for tree in population]),
-                np.mean([depth(tree) for tree in population]),
-                diversity(population),
-            ])
+            # Best-so-far tracking resets for each seed
+            best_so_far = None
+            best_so_far_score = np.inf
 
-            # Print progress every 10 generations
-            if gen % 10 == 0:
-                print("Generation", gen, "best so far:", best_so_far_score)
+            # Evolution
+            for gen in range(variables["generations"]):
+                # Use fitness to determine scores for each tree
+                scores = [
+                    fitness(
+                        tree,
+                        x_train,
+                        y_train,
+                        variables["complexity_weight"],
+                    )
+                    for tree in population
+                ]
 
-            # Run on next generation
-            population = next_gen(population, scores, variables)
+                # Find the current generation's best tree
+                best_index = int(np.argmin(scores))
+                if scores[best_index] < best_so_far_score:
+                    best_so_far_score = scores[best_index]
+                    best_so_far = population[best_index]
 
-    # Determine error on the fitness of the best scores of trees, between training
-    # and testing groups
-    train_mse = fitness(best_so_far, x_train, y_train)
-    test_mse = fitness(best_so_far, x_test, y_test)
+                # Compute mean and median over finite scores only
+                finite = [score for score in scores if np.isfinite(score)]
+                writer.writerow([
+                    seed,
+                    gen,
+                    scores[best_index],
+                    best_so_far_score,
+                    np.mean(finite),
+                    np.median(finite),
+                    size(population[best_index]),
+                    np.mean([size(tree) for tree in population]),
+                    np.mean([depth(tree) for tree in population]),
+                    diversity(population),
+                ])
 
-    # Prints best formula, size, and its training and test MSE
-    print("\nBest formula:", to_string(best_so_far))
-    print("Size:", size(best_so_far))
-    print("Train MSE:", train_mse)
-    print("Test MSE:", test_mse)
+                # Print progress every 10 generations
+                if gen % 10 == 0:
+                    print(
+                        "Generation", gen,
+                        "best so far:", best_so_far_score,
+                    )
 
-    return best_so_far, train_mse, test_mse
+                # Create another population only if needed
+                if gen < variables["generations"] - 1:
+                    population = next_gen(population, scores, variables)
+
+            # Report plain MSE
+            train_mse = fitness(best_so_far, x_train, y_train)
+            test_mse = fitness(best_so_far, x_test, y_test)
+            elapsed = time.perf_counter() - start
+
+            print("\nBest formula:", to_string(best_so_far))
+            print("Size:", size(best_so_far))
+            print("Train MSE:", train_mse)
+            print("Test MSE:", test_mse)
+            print(f"Runtime: {elapsed:.2f} seconds")
+
+            # Preserve completed rows before starting the next seed
+            f.flush()
+
+    print("\nResults saved to", log_file)
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else "variables.json"
+    path = sys.argv[1] if len(sys.argv) > 1 else "configs/dataset1.yaml"
 
     start = time.perf_counter()
     run(path)
