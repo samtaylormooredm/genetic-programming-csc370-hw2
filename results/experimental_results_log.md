@@ -56,3 +56,17 @@ tree size = 145 nodes; runtime = 20.15 seconds.
 worse than a constant-mean baseline. Extreme target values dominate
 MSE, and the current complexity penalty is negligible at this scale.
 Should test again with higher generation # to see if results improve.
+
+## Dataset 2: Increased generations
+
+**Change:** Generations increased from 50 to 200; seed 370 and
+all other settings unchanged.
+
+**Results:** Training MSE = 3.08975e17; test MSE = 3.40806e19;
+tree size = 299 nodes; runtime = 136.49 seconds.
+
+**Observation:** Training error decreased by 71%, but test error
+increased approximately 146-fold and tree size roughly doubled.
+Additional evolution improved training fit without improving
+generalization. 0.0001 size penalty is effectively invisible at this scale.
+

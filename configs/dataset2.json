@@ -3,7 +3,7 @@
   "integer_constants": false,
   "seed": 370,
   "population_size": 500,
-  "generations": 50,
+  "generations": 200,
   "init_max_depth": 5,
   "depth_limit": 17,
   "tournament_size": 7,
