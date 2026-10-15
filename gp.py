@@ -164,18 +164,9 @@ def run(variables_path):
     run's best formula, tree size, training/test MSE, and runtime.
     """
 
-    # Initialize with variables and splitting dataset
+     # Initialize with variables and splitting dataset
     with open(variables_path) as f:
         variables = yaml.safe_load(f)
-
-    # Normalize using training data only
-    mse_scale = 1.0
-    if variables.get("normalize_fitness", False):
-        mse_scale = float(np.var(y_train))
-        if not np.isfinite(mse_scale) or mse_scale <= 0:
-            raise ValueError(
-                "Normalized fitness requires positive, finite training-target variance."
-            )
 
     seeds = variables["seeds"]
     x, y = load_dataset(variables["dataset"])
@@ -188,6 +179,16 @@ def run(variables_path):
         train_fraction=variables["train_fraction"],
         seed=variables["split_seed"],
     )
+
+    # Normalize using training data only
+    mse_scale = 1.0
+    if variables.get("normalize_fitness", False):
+        mse_scale = float(np.var(y_train))
+        if not np.isfinite(mse_scale) or mse_scale <= 0:
+            raise ValueError(
+                "Normalized fitness requires positive, finite "
+                "training-target variance."
+            )
 
     # Build one results filename for the whole experiment
     dataset_name = os.path.splitext(
