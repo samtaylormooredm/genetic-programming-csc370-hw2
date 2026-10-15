@@ -190,7 +190,12 @@ def run(variables_path, seed=None):
         generations=variables["generations"],
     )
 
-    x_train, y_train, x_test, y_test = split_data(x, y)
+    x_train, y_train, x_test, y_test = split_data(
+        x,
+        y,
+        train_fraction=variables["train_fraction"],
+        seed=variables["split_seed"],
+    )
 
     # Starting population
     population = generate_population(
