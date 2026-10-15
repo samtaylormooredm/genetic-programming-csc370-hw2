@@ -1,7 +1,7 @@
 {
   "dataset": "dataset2.csv",
-  "train_fraction": 0.8,
-  "split_seed": 42,  
+  "train_fraction": 0.7,
+  "split_seed": 42,
   "integer_constants": false,
   "seed": 370,
   "population_size": 500,

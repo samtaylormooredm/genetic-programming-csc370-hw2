@@ -1,5 +1,14 @@
+"""
+Run GP experiments across multiple random seeds.
+
+Notes
+-----
+Saves each run's formula, tree size, training/test MSE, and runtime
+to a summary CSV. Selects the overall winner by training fitness.
+"""
+
 import csv
-import json
+import yaml
 import os
 import sys
 import time
@@ -12,9 +21,9 @@ seeds = list(range(370, 380))
 
 # Name summary file after the dataset
 with open(config_path) as f:
-        variables = json.load(f)
+    variables = yaml.safe_load(f)
 dataset_name = os.path.splitext(
-     os.path.basename(variables["dataset"]))[0]
+    os.path.basename(variables["dataset"]))[0]
 summary_path = (
     f"results/summary_{dataset_name}"
     f"_pop{variables['population_size']}"
@@ -24,8 +33,7 @@ summary_path = (
 
 # Run GP once per seed, then record each run's best tree
 results = []
-# Run GP once per seed, then record each run's best tree
-results = []
+
 for seed in seeds:
     print(seed)
 
