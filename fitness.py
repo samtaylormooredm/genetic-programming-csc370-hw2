@@ -3,7 +3,7 @@ import numpy as np
 
 from tree import evaluate, size, Node
 
-def fitness(node, x, y, complexity_weight=0):
+def fitness(node, x, y, complexity_weight=0, mse_scale=1.0):
     """
     Score a tree using mean squared error and a size penalty.
     Return a float with the fitness score. Lower = better.
@@ -29,6 +29,9 @@ def fitness(node, x, y, complexity_weight=0):
     complexity_weight : float, optional
         Penalty per node (y in Luke & Panait's formula). Defaults to 0,
         meaning no size penalty.
+    mse_scale : float, optional
+        Scale used to normalize MSE. Use training-target variance
+        for normalized fitness, or 1.0 for raw MSE. Defaults to 1.0.
 
     Returns
     -------
@@ -43,8 +46,8 @@ def fitness(node, x, y, complexity_weight=0):
     
     mse = mean_squared_error(y, predictions)
 
-    # Size penalty: linear parametric parsimony pressure (Luke & Panait 2006)
-    score = mse + complexity_weight * size(node)
+    # Optionally normalize MSE, then add a linear size penalty (Luke & Panait 2006)
+    score = mse / mse_scale + complexity_weight * size(node)
 
     if not np.isfinite(score):
         return float("inf")

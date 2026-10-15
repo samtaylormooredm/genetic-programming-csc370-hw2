@@ -2,6 +2,7 @@
 
 dataset: dataset1.csv
 integer_constants: true
+normalize_fitness: false
 
 # GP seeds: each runs an independent experiment
 seeds: [370, 371, 372]

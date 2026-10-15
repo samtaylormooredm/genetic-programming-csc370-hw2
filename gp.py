@@ -168,6 +168,15 @@ def run(variables_path):
     with open(variables_path) as f:
         variables = yaml.safe_load(f)
 
+    # Normalize using training data only
+    mse_scale = 1.0
+    if variables.get("normalize_fitness", False):
+        mse_scale = float(np.var(y_train))
+        if not np.isfinite(mse_scale) or mse_scale <= 0:
+            raise ValueError(
+                "Normalized fitness requires positive, finite training-target variance."
+            )
+
     seeds = variables["seeds"]
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
@@ -230,7 +239,8 @@ def run(variables_path):
                         tree,
                         x_train,
                         y_train,
-                        variables["complexity_weight"],
+                        complexity_weight=variables["complexity_weight"],
+                        mse_scale=mse_scale,
                     )
                     for tree in population
                 ]
