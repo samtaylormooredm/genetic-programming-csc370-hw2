@@ -9,7 +9,7 @@ normalize_fitness: false
 
 # GP seeds: each runs an independent experiment
 # seeds: [370, 371, 372]
-seeds: [370, 371, 372]
+seeds: [370, 371, 372, 373]
 
 # Fixed data split shared by all runs
 train_fraction: 0.7
@@ -17,7 +17,7 @@ split_seed: 42
 
 # Population and tree limits
 population_size: 500
-generations: 500
+generations: 1000
 init_max_depth: 5
 depth_limit: 17 # (Luke & Panait 2006, Sec. 3, p. 6)
 

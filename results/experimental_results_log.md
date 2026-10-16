@@ -127,3 +127,55 @@ Normalization made the size penalty influential, but the runs
 favored an overly simple model and plateaued by generation 10.
 Next: reduce the penalty to 0.000001 while holding other settings fixed.
 
+## Dataset 2: Fitness and search improvements
+
+Normalized MSE with a size penalty of 0.0001 caused all three
+seeds to converge to x2. Reducing the penalty improved training
+MSE but substantially worsened test MSE.
+
+Training-data analysis showed that one observation dominated
+squared error. Switched to scaled-error fitness:
+
+mean(((prediction - target) / (1 + abs(target)))²)
++ 0.000001 × tree_size
+
+An initial run converged to a constant and lost structural
+diversity. Subsequent experiments introduced weaker tournament
+selection, more mutation, random immigrants, and broader
+real-valued constant sampling.
+
+## Dataset 2: Best completed configuration
+
+- Population: 500; generations: 500; seeds: 370–372.
+- Training/test split: 70%/30%; split seed: 42.
+- Initial maximum depth: 5; depth limit: 17.
+- Tournament size: 3.
+- Crossover: 0.80; mutation: 0.10; reproduction: 0.10.
+- Random immigrants: 10% of each new population.
+- Real constants: 50% uniform [-10, 10]; otherwise random
+  sign × 10^U, where U is uniform [-12, 12].
+- Fitness: scaled error + 0.000001 × node count.
+- No input scaling.
+
+| Seed | Train scaled error | Test scaled error | Tree size | Runtime |
+|---|---:|---:|---:|---:|
+| 370 | 0.265768 | 0.270364 | 179 | 590.68 s |
+| 371 | 0.001359 | 0.001273 | 111 | 476.20 s |
+| 372 | 0.051073 | 0.061308 | 305 | 495.95 s |
+
+**Best candidate:** Seed 371 achieved 99.84% lower test scaled
+error than the training-fitted constant baseline (0.807164).
+Its similar training and test errors are encouraging on this split.
+
+**Convergence:** Seed 370's test scaled error decreased from
+0.785328 at 50 generations to 0.477149 at 200 and 0.270364
+at 500, supporting the longer run.
+
+**Diversity and bloat:** Final structural diversity remained
+94.6–98.2%, but trees grew substantially. Distinct expressions
+do not necessarily produce distinct predictions.
+
+**Limitations:** Results varied considerably by seed. Raw MSE
+remained large because extreme targets were still poorly fit.
+The repeatedly consulted test split provides exploratory results.
+Recovery of the underlying function has not yet been established.
