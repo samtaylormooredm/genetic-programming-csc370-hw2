@@ -123,10 +123,27 @@ def next_gen(population, scores, variables):
     list of Node
         The new population, exactly population_size trees long.
     """
+    population_size = variables["population_size"]
+    immigrant_fraction = variables.get("immigrant_fraction", 0.0)
+    num_immigrants = int(population_size * immigrant_fraction)
+    num_offspring = population_size - num_immigrants
+
     new_population = []
-    while len(new_population) < variables["population_size"]:
-        new_population.extend(make_children(population, scores, variables))
-    return new_population[:variables["population_size"]]
+    while len(new_population) < num_offspring:
+        new_population.extend(
+            make_children(population, scores, variables)
+        )
+
+    new_population = new_population[:num_offspring]
+
+    immigrants = generate_population(
+        num_immigrants,
+        variables["init_max_depth"],
+        variables["num_variables"],
+        variables["integer_constants"],
+    )
+
+    return new_population + immigrants
 
 def diversity(population):
     """
