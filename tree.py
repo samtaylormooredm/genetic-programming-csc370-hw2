@@ -96,8 +96,15 @@ def generate_random_terminal(num_variables, integer_constants=True):
     # For constants, generate random # btwn -10 and 10
     # NOTE: Could be potential place to adjust for experimentation
     if integer_constants:
-        return Node("constant", random.randint(-10,10))
-    return Node("constant", random.uniform(-10,10))
+        return Node("constant", random.randint(-10, 10))
+
+    if random.random() < 0.5:
+        value = random.uniform(-10, 10)
+    else:
+        sign = random.choice([-1.0, 1.0])
+        value = sign * 10.0 ** random.uniform(-12, 12)
+
+    return Node("constant", value)
 
 def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
     """
