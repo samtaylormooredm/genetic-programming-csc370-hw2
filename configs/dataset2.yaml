@@ -4,8 +4,8 @@
 
 dataset: dataset2.csv
 integer_constants: false
-normalize_fitness: true # Scale MSE by training-target variance so the size 
-    # penalty matters despite large target values
+error_metric: scaled
+normalize_fitness: false
 
 # GP seeds: each runs an independent experiment
 # seeds: [370, 371, 372]
