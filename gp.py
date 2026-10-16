@@ -174,6 +174,17 @@ def run(variables_path):
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
 
+    # Data cleaning (dataset2): x3 is recorded to 2 decimals, so rows with
+    # tiny x3 are too imprecise to predict y. Drop them before splitting.
+    if "min_x3" in variables:
+        keep = x[:, 2] >= variables["min_x3"]
+        print("Dropping", int((~keep).sum()), "rows with x3 <", variables["min_x3"])
+        x, y = x[keep], y[keep]
+    # Input scaling: bring x1 and x2 (up to 10 million) onto the same
+    # scale as the random constants (-10 to 10)
+    if "input_scale" in variables:
+        x = x / np.array(variables["input_scale"])
+
     # Use the same training/test rows for every seed
     x_train, y_train, x_test, y_test = split_data(
         x,
