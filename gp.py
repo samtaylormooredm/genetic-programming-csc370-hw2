@@ -4,10 +4,10 @@ Genetic programming loop for symbolic regression.
 Evolves a population of expression trees using tournament selection,
 subtree crossover, subtree mutation, and reproduction, and logs
 per-generation statistics to a CSV file. All settings are read from a
-YAML config file (e.g. dataset1_variables.yaml).
+YAML config file (e.g. configs/dataset1.yaml).
 
 Run from the command line:
-    python gp.py dataset1_variables.yaml
+    python gp.py configs/dataset1.yaml
 """
 
 import yaml
@@ -163,7 +163,9 @@ def run(variables_path):
     Writes one combined generation CSV with a seed column. Prints each
     run's best formula, tree size, training/test MSE, and runtime.
     """
-
+    
+    # one row per seed: seed, formula, size, train_mse, test_mse
+    summary = []
     # Initialize with variables and splitting dataset
     with open(variables_path) as f:
         variables = yaml.safe_load(f)
@@ -277,11 +279,33 @@ def run(variables_path):
             print("Train MSE:", train_mse)
             print("Test MSE:", test_mse)
             print(f"Runtime: {elapsed:.2f} seconds")
+            summary.append([seed, to_string(best_so_far), size(best_so_far),
+                train_mse, test_mse])
 
             # Preserve completed rows before starting the next seed
             f.flush()
 
-    print("\nResults saved to", log_file)
+    # Save one summary row per seed
+    summary_file = log_file.replace(".csv", "_summary.csv")
+    with open(summary_file, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["seed", "formula", "size", "train_mse", "test_mse"])
+        writer.writerows(summary)
+
+    # Pick the best model by test MSE (HW2 handout, "On Overfitting");
+    # ties within 1e-9 go to the smaller tree (our choice)
+    winner = summary[0]
+    for row in summary:
+        clearly_better = row[4] < winner[4] - 1e-9
+        tied_but_smaller = abs(row[4] - winner[4]) <= 1e-9 and row[2] < winner[2]
+        if clearly_better or tied_but_smaller:
+            winner = row
+
+    print("\nBest overall (picked by test MSE, ties broken by size):")
+    print("Seed:", winner[0], "| Size:", winner[2], "| Test MSE:", winner[4])
+    print("Formula:", winner[1])
+    print("\nGeneration log saved to", log_file)
+    print("Summary saved to", summary_file)
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else "configs/dataset1.yaml"

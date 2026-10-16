@@ -4,7 +4,7 @@ dataset: dataset1.csv
 integer_constants: true
 
 # GP seeds: each runs an independent experiment
-seeds: [370, 371, 372]
+seeds: [370, 371, 372, 373, 374, 375, 376, 377, 378, 379]
 
 # Fixed data split shared by all runs
 train_fraction: 0.8
