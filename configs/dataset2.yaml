@@ -32,4 +32,4 @@ mutation_rate: 0.01 # (Koza tutorial, p. 2)
 complexity_weight: 0.000001 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
 
 # One CSV containing all seeds
-log_file: "results/{dataset}_normalized_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"
+log_file: "results/{dataset}_scaled_error_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"

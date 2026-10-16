@@ -242,6 +242,7 @@ def run(variables_path):
                         y_train,
                         complexity_weight=variables["complexity_weight"],
                         mse_scale=mse_scale,
+                        error_metric=variables.get("error_metric", "mse"),
                     )
                     for tree in population
                 ]
