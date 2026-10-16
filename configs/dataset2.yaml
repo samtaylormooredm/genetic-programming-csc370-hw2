@@ -17,12 +17,12 @@ depth_limit: 17 # (Luke & Panait 2006, Sec. 3, p. 6)
 # Selection and genetic operations
 tournament_size: 7 # (Luke & Panait 2006, Sec. 3, p. 6) - how many trees compete when a
   # parent is selected
-crossover_rate: 0.9 # (Koza tutorial, p. 2)
-mutation_rate: 0.01 # (Koza tutorial, p. 2)
+crossover_rate: 0.9 # (Koza tutorial)
+mutation_rate: 0.01 # (Koza tutorial)
 # Remaining 9% probability selects reproduction
 
 # Linear size penalty; scaled for MSE after cleaning
-complexity_weight: 0.1 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
+complexity_weight: 1 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
 
 # Data cleaning: x3 is recorded to 2 decimals. Below x3 = 0.5, rounding
 # changes 1/x3^2 by more than 2%, and those rows' huge y values dominate
