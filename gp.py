@@ -296,15 +296,42 @@ def run(variables_path):
                 if gen < variables["generations"] - 1:
                     population = next_gen(population, scores, variables)
 
-            # Report plain MSE
+                        # Report raw MSE.
             train_mse = fitness(best_so_far, x_train, y_train)
             test_mse = fitness(best_so_far, x_test, y_test)
-            elapsed = time.perf_counter() - start
 
             print("\nBest formula:", to_string(best_so_far))
             print("Size:", size(best_so_far))
             print("Train MSE:", train_mse)
             print("Test MSE:", test_mse)
+
+            # Additional diagnostics for the scaled-error experiment.
+            if variables.get("error_metric", "mse") == "scaled":
+                train_scaled = fitness(
+                    best_so_far, x_train, y_train,
+                    error_metric="scaled",
+                )
+                test_scaled = fitness(
+                    best_so_far, x_test, y_test,
+                    error_metric="scaled",
+                )
+
+                # Fit the best constant using training data only.
+                weights = 1.0 / (1.0 + np.abs(y_train)) ** 2
+                constant = (
+                    np.sum(weights * y_train) / np.sum(weights)
+                )
+
+                baseline_test = np.mean(
+                    ((constant - y_test) / (1.0 + np.abs(y_test))) ** 2
+                )
+
+                print("Train scaled error:", train_scaled)
+                print("Test scaled error:", test_scaled)
+                print("Constant baseline:", constant)
+                print("Constant test scaled error:", baseline_test)
+
+            elapsed = time.perf_counter() - start
             print(f"Runtime: {elapsed:.2f} seconds")
 
             # Preserve completed rows before starting the next seed
