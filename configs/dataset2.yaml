@@ -8,7 +8,8 @@ normalize_fitness: true # Scale MSE by training-target variance so the size
     # penalty matters despite large target values
 
 # GP seeds: each runs an independent experiment
-seeds: [370, 371, 372]
+# seeds: [370, 371, 372]
+seeds: [370]
 
 # Fixed data split shared by all runs
 train_fraction: 0.7
@@ -28,7 +29,7 @@ mutation_rate: 0.01 # (Koza tutorial, p. 2)
 # Remaining 9% probability selects reproduction
 
 # Linear size penalty; not yet tuned for dataset 2
-complexity_weight: 0.0001 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
+complexity_weight: 0.000001 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
 
 # One CSV containing all seeds
 log_file: "results/{dataset}_normalized_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"

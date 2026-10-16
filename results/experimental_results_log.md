@@ -117,3 +117,13 @@ increased approximately 146-fold and tree size roughly doubled.
 Additional evolution improved training fit without improving
 generalization. 0.0001 size penalty is effectively invisible at this scale.
 
+### Dataset 2: Normalized fitness, penalty 0.0001
+
+All three seeds converged to x2 (1 node), with training MSE
+1.47442e18 and test MSE 4.85292e15. Runtime was approximately
+31 seconds per seed.
+
+Normalization made the size penalty influential, but the runs
+favored an overly simple model and plateaued by generation 10.
+Next: reduce the penalty to 0.000001 while holding other settings fixed.
+
