@@ -9,7 +9,7 @@ normalize_fitness: false
 
 # GP seeds: each runs an independent experiment
 # seeds: [370, 371, 372]
-seeds: [371, 372]
+seeds: [370, 371, 372, 373]
 
 # Fixed data split shared by all runs
 train_fraction: 0.7
@@ -34,4 +34,4 @@ immigrant_fraction: 0.10
 complexity_weight: 0.000001 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
 
 # One CSV containing all seeds
-log_file: "results/{dataset}_local_constant_mutation_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"
+log_file: "results/{dataset}_scaled_wide_constants_tourn3_mut10_imm10_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"

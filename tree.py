@@ -392,58 +392,44 @@ def replace_subtree(node, path, replacement):
 
 def mutate(node, max_depth, num_variables, integer_constants=True):
     """
-    Mutate an expression while preserving the original tree.
+    Replace a random subtree with a randomly generated tree.
 
-    Integer-constant mode retains the original subtree mutation.
-    Real-constant mode uses:
-      - 30% constant mutation, when constants exist.
-      - Otherwise, subtree replacement capped at depth 3.
+    Parameters
+    ----------
+    node : Node
+        Root of the original tree.
+    max_depth : int
+        Maximum depth allowed for the resulting tree.
+    num_variables : int
+        Number of available input variables.
+    integer_constants : bool, optional
+        True for whole-number constants, False for real-valued constants.
+
+    Returns
+    -------
+    Node
+        Mutated tree.
     """
+    path = random.choice(get_paths(node))
 
-    paths = get_paths(node)
-
-    # Dataset 2: sometimes adjust one constant without changing structure.
-    if not integer_constants:
-        constant_paths = [
-            path
-            for path in paths
-            if get_subtree(node, path).kind == "constant"
-        ]
-
-        if constant_paths and random.random() < 0.3:
-            path = random.choice(constant_paths)
-            old_value = get_subtree(node, path).value
-
-            if old_value == 0:
-                new_value = random.gauss(0, 0.1)
-            else:
-                # Relative adjustment works for both tiny and large constants.
-                new_value = old_value * 10.0 ** random.gauss(0, 0.1)
-
-            if np.isfinite(new_value):
-                return replace_subtree(
-                    node,
-                    path,
-                    Node("constant", new_value),
-                )
-
-    # Subtree mutation: select a location and generate a replacement.
-    path = random.choice(paths)
+    # Each step in the path uses one level of the depth limit.
     remaining_depth = max_depth - len(path)
 
-    # Keep dataset 1's original behavior.
-    # For dataset 2, make newly generated branches more local.
-    replacement_depth = (
-        remaining_depth
-        if integer_constants
-        else min(remaining_depth, 3)
+    replacement = generate_random_tree(
+        max_depth=remaining_depth,
+        num_variables=num_variables,
+        integer_constants = integer_constants
     )
 
-    replacement = generate_random_tree(
-        max_depth=replacement_depth,
-        num_variables=num_variables,
-        integer_constants=integer_constants,
-    )
+    # NOTE: Currently allows pretty significant mutations, could possibly test with having
+    # replacement subtree be at most depth 2:
+    # remaining_depth = max_depth - len(path)
+    # replacement_depth = min(remaining_depth, 2)
+
+    # replacement = generate_random_tree(
+    #     max_depth=replacement_depth,
+    #     num_variables=num_variables,
+    # )
 
     return replace_subtree(node, path, replacement)
 
