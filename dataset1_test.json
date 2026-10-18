@@ -1,0 +1,15 @@
+{
+"dataset": "dataset1_small.csv",
+  "num_variables": 1,
+  "integer_constants": true,
+  "seed": 370,
+  "population_size": 100,
+  "generations": 20,
+  "init_max_depth": 5,
+  "depth_limit": 17,
+  "tournament_size": 7,
+  "crossover_rate": 0.9,
+  "mutation_rate": 0.01,
+  "complexity_weight": 0.01,
+  "log_file": "results/{dataset}_seed{seed}_penalty{complexity_weight}.csv"
+}

@@ -1,0 +1,19 @@
+# "The most widely-used approach to parametric parsimony pressure is to treat the
+# individual’s size as a linear factor in fitness, that is, g= xf + ys, where x and y are
+# parameter settings.2 This technique has been used in both GP (Koza, 1992) and in non-
+# GP (Burke et al., 1998), and it is the method we consider in this paper" (Luke and Panait, 2006) 
+
+
+# - Fitness = MSE + c * size(tree). This is Luke & Panait's (2006) linear parametric
+#   parsimony pressure, g = x*f + y*s (Sec. 5, p. 10), with x = 1 and y = c.
+#   where g is the penalized fitness, f is the raw fitness (MSE), s is the size (size(tree)).
+#   Notice x and y, which are weights to MSE and size of tree respectively. We set x = 1, since 
+#   MSE should be counted at full strength, where y = c for a constant c that changes as x changes
+
+# - Their experiments fixed y = 1 and varied x; for symbolic regression, x from 16 to 2048
+#   was effective (Sec. 5.1, p. 13). In our form this corresponds to c = 1/x ≈ 0.0005–0.06, 
+#   but the right c depends on the fitness scale, so we choose c by sweep.
+
+# Luke, Sean, and Liviu Panait. "A Comparison of Bloat Control Methods for Genetic Programming." 
+# Evolutionary Computation, vol. 14, no. 3, 2006, pp. 309–44, 
+# https://doi.org/10.1162/evco.2006.14.3.309.
