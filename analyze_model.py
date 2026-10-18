@@ -1,204 +1,195 @@
-"""Analyze a saved GP formula using the original test split."""
+"""
+Analyze a saved GP model without rerunning evolution.
+"""
 
 import argparse
 import ast
+import csv
+import json
 from pathlib import Path
 import re
 
 import matplotlib
 matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-from data import load_dataset, split_data
-from tree import Node, evaluate, size
+
+def load_formula(path, seed):
+    """Read one explicitly chosen seed; do not select using test results."""
+    path = Path(path)
+    if path.suffix.lower() == ".csv":
+        with path.open(newline="", encoding="utf-8-sig") as stream:
+            for row in csv.DictReader(stream):
+                if int(row["seed"]) == seed:
+                    return row["formula"]
+    else:
+        sections = re.split(r"--- Seed (\d+) ---", path.read_text())
+        for i in range(1, len(sections), 2):
+            if int(sections[i]) == seed:
+                match = re.search(r"^Best formula:\s*(.+)$", sections[i + 1], re.M)
+                if match:
+                    return match.group(1)
+                raise ValueError(f"Seed {seed} has no completed formula.")
+    raise ValueError(f"No formula found for seed {seed} in {path}.")
 
 
-def parse_formula(formula):
-    """Convert the printed arithmetic expression back into a Node tree."""
-    operators = {
-        ast.Add: "+",
-        ast.Sub: "-",
-        ast.Mult: "*",
-        ast.Div: "/",
+def predict(formula, x):
+    """Interpret only arithmetic AST nodes, preserving protected division."""
+    def visit(node):
+        if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+            return np.full(len(x), float(node.value))
+        if isinstance(node, ast.Name) and re.fullmatch(r"x[1-9]\d*", node.id):
+            index = int(node.id[1:]) - 1
+            if index >= x.shape[1]:
+                raise ValueError(f"Variable {node.id} is absent from this dataset.")
+            return x[:, index]
+        if isinstance(node, ast.UnaryOp):
+            if isinstance(node.op, ast.USub):
+                return -visit(node.operand)
+            if isinstance(node.op, ast.UAdd):
+                return visit(node.operand)
+        if isinstance(node, ast.BinOp):
+            left, right = visit(node.left), visit(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            if isinstance(node.op, ast.Div):
+                result = np.ones_like(left, dtype=float)
+                np.divide(left, right, out=result, where=np.abs(right) >= 1e-6)
+                return result
+        raise ValueError(f"Unsupported expression: {ast.dump(node)}")
+
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        result = visit(ast.parse(formula, mode="eval").body)
+    if not np.all(np.isfinite(result)):
+        raise ValueError("Model produced nonfinite predictions.")
+    return result
+
+
+def metrics(actual, predicted):
+    residual = predicted - actual
+    scaled = residual / (1.0 + np.abs(actual))
+    return {
+        "rows": len(actual),
+        "mse": float(np.mean(residual ** 2)),
+        "rmse": float(np.sqrt(np.mean(residual ** 2))),
+        "mae": float(np.mean(np.abs(residual))),
+        "median_absolute_error": float(np.median(np.abs(residual))),
+        "scaled_error": float(np.mean(scaled ** 2)),
+        "fraction_within_0.01_times_1_plus_abs_y": float(np.mean(np.abs(scaled) <= .01)),
+        "fraction_within_0.05_times_1_plus_abs_y": float(np.mean(np.abs(scaled) <= .05)),
     }
-
-    def convert(expression):
-        if isinstance(expression, ast.Constant):
-            if type(expression.value) not in (int, float):
-                raise ValueError("Constants must be numeric.")
-            return Node("constant", expression.value)
-
-        if isinstance(expression, ast.Name):
-            if expression.id not in ("x1", "x2", "x3"):
-                raise ValueError(f"Unknown variable: {expression.id}")
-            return Node("variable", int(expression.id[1:]) - 1)
-
-        if isinstance(expression, ast.UnaryOp):
-            child = convert(expression.operand)
-            if child.kind != "constant":
-                raise ValueError("Only signed constants are supported.")
-            if isinstance(expression.op, ast.USub):
-                return Node("constant", -child.value)
-            if isinstance(expression.op, ast.UAdd):
-                return child
-
-        if isinstance(expression, ast.BinOp):
-            operator = operators.get(type(expression.op))
-            if operator is not None:
-                return Node(
-                    "operator",
-                    operator,
-                    (
-                        convert(expression.left),
-                        convert(expression.right),
-                    ),
-                )
-
-        raise ValueError("Unsupported expression in formula.")
-
-    return convert(ast.parse(formula, mode="eval").body)
-
-
-def load_model(output_path, seed):
-    """Extract one seed's best formula from a completed output log."""
-    text = Path(output_path).read_text()
-
-    sections = re.split(r"--- Seed (\d+) ---", text)
-    for i in range(1, len(sections), 2):
-        if int(sections[i]) == seed:
-            match = re.search(
-                r"^Best formula:\s*(.+)$",
-                sections[i + 1],
-                flags=re.MULTILINE,
-            )
-            if match:
-                return parse_formula(match.group(1))
-            raise ValueError(f"Seed {seed} has no completed formula.")
-
-    raise ValueError(f"Seed {seed} was not found.")
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("output_file", help="Completed SLURM/text output")
-    parser.add_argument("--seed", type=int, default=371)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("model_file", help="Summary CSV or completed output log")
+    parser.add_argument("--dataset", choices=("dataset1", "dataset2"), required=True)
+    parser.add_argument("--seed", type=int, default=370)
+    parser.add_argument("--data", type=Path, help="CSV path; default: data/DATASET.csv")
+    parser.add_argument("--train-fraction", type=float)
+    parser.add_argument("--split-seed", type=int, default=42)
+    parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
 
-    model = load_model(args.output_file, args.seed)
+    fraction = args.train_fraction
+    if fraction is None:
+        fraction = .8 if args.dataset == "dataset1" else .7
+    if not 0 < fraction < 1:
+        parser.error("--train-fraction must be between zero and one.")
+    data_path = args.data or Path(__file__).resolve().parent / "data" / f"{args.dataset}.csv"
+    values = np.loadtxt(data_path, delimiter=",", skiprows=1)
+    x, y = values[:, :-1], values[:, -1]
+    if not np.all(np.isfinite(values)):
+        raise ValueError("Dataset contains nonfinite values.")
+    expected_columns = 1 if args.dataset == "dataset1" else 3
+    if x.shape[1] != expected_columns:
+        raise ValueError(f"Expected {expected_columns} input columns.")
 
-    # Match the unfiltered, unscaled experiment exactly.
-    x, y = load_dataset("dataset2.csv")
-    x_train, y_train, x_test, y_test = split_data(
-        x, y, train_fraction=0.7, seed=42
+    indices = np.random.default_rng(args.split_seed).permutation(len(y))
+    cutoff = int(len(y) * fraction)
+    train, test = indices[:cutoff], indices[cutoff:]
+    formula = load_formula(args.model_file, args.seed)
+    train_prediction = predict(formula, x[train])
+    test_prediction = predict(formula, x[test])
+    report = {
+        "dataset": args.dataset, "model_file": str(args.model_file),
+        "seed": args.seed, "train_fraction": fraction,
+        "split_seed": args.split_seed, "formula": formula,
+        "preprocessing": "No filtering or input scaling",
+        "train": metrics(y[train], train_prediction),
+        "test": metrics(y[test], test_prediction),
+    }
+    if args.dataset == "dataset2":
+        z = x[test, 2]
+        groups = [
+            ("x3 = 0", z == 0),
+            ("0 < x3 <= 0.1", (z > 0) & (z <= .1)),
+            ("0.1 < x3 <= 1", (z > .1) & (z <= 1)),
+            ("x3 > 1", z > 1),
+        ]
+        report["test_by_x3"] = {
+            label: metrics(y[test][mask], test_prediction[mask])
+            for label, mask in groups if np.any(mask)
+        }
+
+    destination = args.output_dir or Path("results") / "analysis" / (
+        f"{Path(args.model_file).stem}_seed{args.seed}"
     )
-
-    # evaluate() preserves the original protected-division behavior.
-    predictions = evaluate(model, x_test)
-    if not np.all(np.isfinite(predictions)):
-        raise ValueError("Model produced nonfinite test predictions.")
-
-    residuals = predictions - y_test
-    scaled_residuals = residuals / (1.0 + np.abs(y_test))
-
-    weights = 1.0 / (1.0 + np.abs(y_train)) ** 2
-    constant = np.sum(weights * y_train) / np.sum(weights)
-    baseline_error = np.mean(
-        ((constant - y_test) / (1.0 + np.abs(y_test))) ** 2
-    )
-
-    print("Seed:", args.seed)
-    print("Tree size:", size(model))
-    print("Test raw MSE:", np.mean(residuals ** 2))
-    print("Test scaled error:", np.mean(scaled_residuals ** 2))
-    print("Constant test scaled error:", baseline_error)
-    print("Median absolute error:", np.median(np.abs(residuals)))
-
-    # Show examples spread across the observed target range.
-    indices = np.argsort(y_test)
-    examples = indices[
-        np.linspace(0, len(indices) - 1, 10, dtype=int)
-    ]
-
-    print("\nExamples across the target range:")
-    print("Actual y | Predicted y | x3")
-    for i in examples:
-        print(
-            f"{y_test[i]:.6g} | "
-            f"{predictions[i]:.6g} | "
-            f"{x_test[i, 2]:.6g}"
-        )
-
-    groups = [
-        ("x3 = 0", x_test[:, 2] == 0),
-        ("0 < x3 <= 0.1",
-         (x_test[:, 2] > 0) & (x_test[:, 2] <= 0.1)),
-        ("0.1 < x3 <= 1",
-         (x_test[:, 2] > 0.1) & (x_test[:, 2] <= 1)),
-        ("x3 > 1", x_test[:, 2] > 1),
-    ]
-
-    print("\nTest scaled error by x3:")
-    for label, mask in groups:
-        if np.any(mask):
-            print(
-                f"{label}: n={mask.sum()}, "
-                f"error={np.mean(scaled_residuals[mask] ** 2):.6g}"
-            )
-
-    output_dir = Path("results") / (
-        f"{Path(args.output_file).stem}_seed{args.seed}_analysis"
-    )
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save every test prediction for further inspection.
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / "metrics.json").write_text(json.dumps(report, indent=2) + "\n")
+    residual = test_prediction - y[test]
     np.savetxt(
-        output_dir / "predictions.csv",
-        np.column_stack((
-            x_test, y_test, predictions,
-            residuals, scaled_residuals,
-        )),
-        delimiter=",",
-        header=(
-            "x1,x2,x3,actual,predicted,"
-            "prediction_minus_actual,scaled_residual"
-        ),
-        comments="",
+        destination / "test_predictions.csv",
+        np.column_stack((test, x[test], y[test], test_prediction, residual,
+                         residual / (1 + np.abs(y[test])))),
+        delimiter=",", comments="",
+        header=",".join(["source_row_index"] + [f"x{i+1}" for i in range(x.shape[1])]
+                        + ["actual", "predicted", "prediction_minus_actual", "scaled_residual"]),
     )
 
-    fig, ax = plt.subplots(figsize=(7, 6))
-    zero_x3 = x_test[:, 2] == 0
-
-    ax.scatter(
-        y_test[~zero_x3], predictions[~zero_x3],
-        s=10, alpha=0.3, label="x3 > 0",
-    )
-    ax.scatter(
-        y_test[zero_x3], predictions[zero_x3],
-        s=45, marker="x", color="orange", label="x3 = 0",
-    )
-
-    low = min(y_test.min(), predictions.min())
-    high = max(y_test.max(), predictions.max())
-    ax.plot([low, high], [low, high], "r--",
-            label="Perfect prediction")
-
-    ax.set_xscale("symlog", linthresh=1)
-    ax.set_yscale("symlog", linthresh=1)
-    ax.set_xlim(low, high)
-    ax.set_ylim(low, high)
-    ax.set_aspect("equal", adjustable="box")
-    ax.set_xlabel("Actual y")
-    ax.set_ylabel("Predicted y")
-    ax.set_title(f"Dataset 2: seed {args.seed}, test predictions")
-    ax.legend()
-
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+    zero = x[test, 2] == 0 if args.dataset == "dataset2" else np.zeros(len(test), dtype=bool)
+    axes[0].scatter(y[test][~zero], test_prediction[~zero], s=9, alpha=.35,
+                    label="Test observations" if args.dataset == "dataset1" else "x3 > 0")
+    if np.any(zero):
+        axes[0].scatter(y[test][zero], test_prediction[zero], marker="x", color="orange",
+                        s=40, label="x3 = 0")
+    low = min(y[test].min(), test_prediction.min())
+    high = max(y[test].max(), test_prediction.max())
+    if low == high:
+        low, high = low - 1, high + 1
+    axes[0].plot([low, high], [low, high], "--", color="#b63c35", label="Perfect prediction")
+    axes[0].set(xlabel="Actual y", ylabel="Predicted y", title="Actual versus predicted")
+    axes[0].legend(fontsize=8)
+    if args.dataset == "dataset1":
+        axes[1].scatter(x[test, 0], residual, s=9, alpha=.35)
+        axes[1].set(xlabel="Input x", ylabel="Prediction minus actual",
+                    title="Residuals across the input range")
+    else:
+        axes[0].set_xscale("symlog", linthresh=1)
+        axes[0].set_yscale("symlog", linthresh=1)
+        axes[1].scatter(x[test, 2], residual / (1 + np.abs(y[test])), s=9, alpha=.35)
+        axes[1].set(xlabel="Input x3", ylabel="Scaled residual",
+                    title="Scaled residuals near zero")
+    axes[1].axhline(0, color="#b63c35", linestyle="--")
+    for axis in axes:
+        axis.grid(alpha=.15)
+    fig.suptitle(f"{args.dataset}: seed {args.seed}, test set only (n={len(test):,})")
     fig.tight_layout()
-    fig.savefig(output_dir / "actual_vs_predicted.png", dpi=200)
+    fig.savefig(destination / "prediction_analysis.png", dpi=200)
     plt.close(fig)
 
-    print("\nAnalysis saved to:", output_dir)
+    print(f"{args.dataset}, seed {args.seed}; split {len(train)}/{len(test)}")
+    for label in ("train", "test"):
+        item = report[label]
+        print(f"{label}: MSE={item['mse']:.12g}, RMSE={item['rmse']:.8g}, "
+              f"scaled error={item['scaled_error']:.12g}")
+    print("Saved analysis to", destination)
 
 
 if __name__ == "__main__":
