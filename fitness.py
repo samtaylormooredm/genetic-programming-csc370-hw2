@@ -11,16 +11,6 @@ def fitness(
     Score a tree using mean squared error and a size penalty.
     Return a float with the fitness score. Lower = better.
 
-    Implements linear parametric parsimony pressure (Luke & Panait 
-    2006, Sec. 5, p. 10), whose general form is g = x*f + y*s, where
-    f is the raw fitness and s is the tree size. We have that f = MSE,
-    s = size(node), x = 1, and y = complexity_weight
-
-    Luke & Panait found this penalty , combined with a depth limit of 
-    17, reduced bloat without hurting fitness. The right weight depends 
-    on the scale of the fitness values (Sec. 5, p. 10), so 
-    complexity_weight is tuned separately for each dataset.
-
     Parameters
     ----------
     node : Node

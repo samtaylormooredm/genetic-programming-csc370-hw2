@@ -4,9 +4,11 @@ CSC 370 Homework 2 explores how genetic programming can evolve arithmetic
 expressions that predict two datasets. Each candidate equation is an expression
 tree. Evolution selects trees using prediction error and a penalty for tree size.
 
-Dataset 1 consistently produces the quadratic **x² − 6x + 14**. Dataset 2 needs
-a different error objective and broader constant sampling; its best scaled-error
-run fits most observations closely but still fails on extreme targets near x3 = 0.
+Dataset 1 consistently recovers the quadratic **x² − 6x + 14**. Dataset 2
+uses a scaled-error objective and broad constant sampling to model a target
+spanning many orders of magnitude. Its selected model achieves a test scaled
+error of **0.00079944** and a median absolute test error of **0.04167**.
+The largest errors occur near x3 = 0.
 
 ## Running the project
 
@@ -59,7 +61,7 @@ training MSE + 0.0001 * tree size
 Dataset 2 uses:
 
 ```text
-mean(((prediction - target) / (1 + abs(target)))**2) + 0.000001 * tree size
+np.mean(((prediction - target) / (1 + np.abs(target))) ** 2) + 0.000001 * tree_size
 ```
 
 The dataset-2 objective weights each squared residual by
@@ -157,7 +159,7 @@ the evolved expressions, not a formula inserted into the initial population.
 70/30 split (17,500/7,500 rows), split seed 42; initial maximum depth 5;
 depth limit 17; tournament size 3; crossover 0.80; mutation 0.10;
 reproduction probability 0.10 among offspring-generation events; random
-immigrants fill 10% of the population; wide constants described under Main experimental changes; scaled-error
+immigrants fill 10% of the population; wide constants described under Search configuration and development; scaled-error
 fitness + 0.000001 * node count. No row filtering or input scaling.
 
 **Result files:**
@@ -186,29 +188,47 @@ fitness ever found in that seed's run, not the current population's fitness.
 | 373 | 1.474528e18 | 4.836709e15 |
 
 **Best under scaled error:** seed 371. The training-fitted constant baseline
-is 1.82376892, with test scaled error 0.80716405. All four runs beat this
-baseline, but their error levels differ substantially. Seed 373 has slightly
-lower raw test MSE than seed 371; "best" therefore depends on the metric.
+is 1.82376892, with test scaled error 0.80716405. All four runs outperform this
+baseline. Seed 371 has the lowest training scaled error, test scaled error,
+and raw test MSE among the four runs.
 
 **Diversity and bloat:** final structural diversity is 97.4%, 99.2%, 97.8%,
 and 97.4%. Distinct expression strings do not establish behavioral diversity.
 Final population-average tree sizes are approximately 148, 146, 327, and 137;
 growth remains substantial despite the size penalty and depth limit.
 
-**Prediction analysis, seed 371:** the 7,500 test
-predictions have median absolute error 0.0417. About 93.8% have absolute error
-at most `0.01 * (1 + abs(actual))`, and 98.68% meet the analogous 0.05 threshold.
-These are scaled-error thresholds, not ordinary percentage accuracy.
-The three test rows with x3 = 0 account for approximately 99.9984% of total
-squared error. Predictions also worsen for small positive x3.
+### Prediction performance: seed 371
 
-**Conclusion and limits:** the final model predicts most observed values
-closely under the scaled objective, with similar train/test scaled errors.
-Raw MSE remains large, and errors near zero-valued x3 remain a failure case.
-Limited recorded precision may contribute, but has not been confirmed as the
-cause. The test split was consulted repeatedly during experimentation; these
-are exploratory test results. The evolved protected-division expression is a
-predictive approximation, not established recovery of the exact mystery function.
+The selected model predicts most test observations closely. Across all 7,500
+test rows, its median absolute error is **0.04167 output units**; 75% of
+absolute errors are at most **0.38643**, and 81.4% are at most 1 output unit.
+
+| Statistic | Absolute prediction error |
+|---|---:|
+| 25th percentile | 0.00855 |
+| **Median** | **0.04167** |
+| 75th percentile | 0.38643 |
+| 90th percentile | 5.91661 |
+| 95th percentile | 53.15677 |
+| 99th percentile | 4108.53330 |
+
+**Scaled-error coverage:** 93.8% of test predictions have absolute error at
+most `0.01 * (1 + abs(actual))`; 98.68% meet the corresponding 0.05 threshold.
+These measure coverage under stated error tolerances, rather than classification
+accuracy or ordinary percentage error.
+
+**Extreme-target behavior:** the three test rows with x3 = 0 contribute
+approximately 99.9984% of total squared error. Excluding only those rows from
+the existing predictions reduces test MSE from **4.794879e15** to
+**7.507193e10** across the remaining 7,497 rows. This is a diagnostic comparison,
+not a retrained model or the primary evaluation. Large errors also remain for
+some nonzero x3 values.
+
+**Result:** GP produced a model with low scaled prediction error across most
+observations and similar training and test scaled errors. Its 139-node
+expression remains structurally complex, and raw MSE exposes severe errors
+on extreme targets. These results establish the model's predictive performance
+on this split; they do not establish recovery of the exact generating function.
 
 ### Final evolved equation and tree: seed 371
 
@@ -230,12 +250,11 @@ unprotected division):
 (((x1 / ((((x3 * x1) * x2) + (x1 / x1)) + (((x2 - ((x3 + x1) / (92890484798.7518 + -2.002835191099754e-06))) / (x3 * 20.561749989710545)) / 20.561749989710545))) + (((((((6.194662092275518 + 0.9568895863753788) - (((-0.7878465889803703 - x3) + x3) + ((8.6654421403368 + 6.194662092275518) * x1))) - (((((((6.194662092275518 + ((20.561749989710545 + 0.9568895863753788) - x3)) * x1) + x1) + (20.561749989710545 + 6.194662092275518)) * ((x3 / 6.194662092275518) + (8.6654421403368 / -4.269752075015885))) / -1.0320722220226024) + ((6.346603816893701 + 6.346603816893701) * x1))) - (x3 + ((20.561749989710545 + 6.194662092275518) * x1))) / -3902149.0985513106) - 1.7081374851345555e-08) / x3)) / (((x3 + ((6.194662092275518 / (x3 * (x3 / (20.561749989710545 + 6.346603816893701)))) + (3981380.8245344167 - 6.194662092275518))) / x2) / (((8.865141113756462 / x3) + (6.194662092275518 / ((((20.561749989710545 + ((8.6654421403368 + 6.194662092275518) / x3)) - x3) / (((6.194662092275518 + 8.6654421403368) / (x3 * x3)) + 6.194662092275518)) + 6.346603816893701))) / (6.194662092275518 / 6.346603816893701))))
 ```
 
-The complete expression is retained for reproducibility. No short algebraically
-equivalent expression has yet been verified while preserving protected
-branches. A large tree can predict well without recovering a compact,
-interpretable generating function; this is a remaining limitation.
+This is the saved GP model used for the reported metrics. Its full expression
+preserves all protected-division branches. A compact equivalent has not been
+verified, so tree size and predictive error are reported separately.
 
-### Candidate relationship deduced from exploratory training-data analysis
+### Supporting analysis of the input-output relationship
 
 Independently of the evolved tree, inspection of training rows suggested:
 
@@ -248,20 +267,19 @@ For training rows with x3 > 1, the ratio `y * x3**2 / (x1 * x2)` had median
 approximately 6.673e-11, with 5th-95th percentiles approximately
 6.651e-11 to 6.695e-11. This supports the candidate relationship away from zero.
 
-**Status:** this is a hypothesis deduced from the data, not a verified
-simplification of seed 371's tree and not an independently GP-recovered
-closed form. It is undefined at x3 = 0 under ordinary division. The candidate
-formula and its coefficient were not hard-coded into the GP population;
-subsequent broad constant sampling was an informed experimental choice and
-is documented above. Do not present the candidate and the evolved model as
-interchangeable or assign the evolved model's metrics to this candidate.
+**Relationship to the GP result:** this data-derived candidate provides
+context for the observed input-output patterns. It is separate from the
+evolved model and has not been verified as an equivalent expression. Ordinary
+division leaves it undefined at x3 = 0. Neither the formula nor its coefficient
+was inserted into the GP population; broad constant sampling was informed by
+this analysis. The prediction metrics above belong to the saved GP tree.
 
-## Main experimental changes
+## Search configuration and development
 
 Early dataset-2 runs either converged to simple weak models or improved training
 MSE while producing much worse test MSE. Dividing MSE by training-target variance
 changed its scale but did not resolve the imbalance between ordinary rows and
-extreme targets. The later experiments introduced:
+extreme targets. The reported configuration uses:
 
 - The per-row scaled-error objective defined above.
 - Tournament size 3, crossover 0.80, mutation 0.10, and fresh random trees filling
@@ -324,8 +342,13 @@ final-model summary or completed SLURM output together. Generation logs show
 search progress; summaries and completed output preserve the final equations.
 An incomplete output file is not a resumable checkpoint.
 
-Dataset 1 recovers a consistent compact model across ten seeds. Dataset 2's
-best scaled-error model is a useful predictive approximation with a documented
-failure near zero-valued x3. Its small scaled error and large raw MSE describe
-different aspects of performance; both should be reported. Because the test
-split was examined repeatedly while tuning, these results are exploratory.
+Dataset 1 recovers a consistent compact model across ten seeds. Dataset 2
+produces low scaled errors across all four runs, with seed 371 giving the
+strongest predictive performance. Median error and error percentiles describe
+performance across typical observations; raw MSE captures the impact of rare,
+large misses. Both are retained in the evaluation.
+
+**Evaluation scope:** the fixed test split was inspected during configuration
+development, so the reported test metrics are not an
+untouched final assessment. An independent holdout would be needed to measure
+performance without that reuse.
