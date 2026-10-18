@@ -392,46 +392,52 @@ def replace_subtree(node, path, replacement):
 
 def mutate(node, max_depth, num_variables, integer_constants=True):
     """
-    Replace a random subtree with a randomly generated tree.
+        Replace a random subtree with a randomly generated tree.
 
-    Parameters
-    ----------
-    node : Node
-        Root of the original tree.
-    max_depth : int
-        Maximum depth allowed for the resulting tree.
-    num_variables : int
-        Number of available input variables.
-    integer_constants : bool, optional
-        True for whole-number constants, False for real-valued constants.
-
-    Returns
-    -------
-    Node
-        Mutated tree.
+        30% shrink mutation
+        70% subtree replacement
+    
+        Parameters
+        ----------
+        node : Node
+            Root of the original tree.
+        max_depth : int
+            Maximum depth allowed for the resulting tree.
+        num_variables : int
+            Number of available input variables.
+        integer_constants : bool, optional
+            True for whole-number constants, False for real-valued constants.
     """
-    path = random.choice(get_paths(node))
+    paths = get_paths(node)
 
-    # Each step in the path uses one level of the depth limit.
+    if not integer_constants and random.random() < 0.3:
+        operator_paths = [
+            path
+            for path in paths
+            if get_subtree(node, path).kind == "operator"
+        ]
+
+        if operator_paths:
+            path = random.choice(operator_paths)
+            subtree = get_subtree(node, path)
+
+            # Replace this operator and its subtree with one child.
+            replacement = random.choice(subtree.children)
+
+            return replace_subtree(node, path, replacement)
+
+    # Original subtree mutation.
+    path = random.choice(paths)
     remaining_depth = max_depth - len(path)
 
     replacement = generate_random_tree(
         max_depth=remaining_depth,
         num_variables=num_variables,
-        integer_constants = integer_constants
+        integer_constants=integer_constants,
     )
 
-    # NOTE: Currently allows pretty significant mutations, could possibly test with having
-    # replacement subtree be at most depth 2:
-    # remaining_depth = max_depth - len(path)
-    # replacement_depth = min(remaining_depth, 2)
-
-    # replacement = generate_random_tree(
-    #     max_depth=replacement_depth,
-    #     num_variables=num_variables,
-    # )
-
     return replace_subtree(node, path, replacement)
+
 
 def crossover(parent1, parent2, max_depth):
     """

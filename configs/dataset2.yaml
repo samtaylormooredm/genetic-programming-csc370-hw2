@@ -17,7 +17,7 @@ split_seed: 42
 
 # Population and tree limits
 population_size: 500
-generations: 1000
+generations: 200
 init_max_depth: 5
 depth_limit: 17 # (Luke & Panait 2006, Sec. 3, p. 6)
 
