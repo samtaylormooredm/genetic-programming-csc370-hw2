@@ -3,7 +3,7 @@ import numpy as np
 
 from tree import evaluate, size, Node
 
-def fitness(node, x, y, complexity_weight=0, error_metric="mse"):
+def fitness(node, x, y, complexity_weight=0, error_metric="mse", mse_scale = 1.0):
     """
     Score a tree using mean squared error and a size penalty.
     Return a float with the fitness score. Lower = better.
@@ -33,6 +33,9 @@ def fitness(node, x, y, complexity_weight=0, error_metric="mse"):
         "mse" (default) for mean squared error, or "scaled" for relative
         error, mean(((prediction - y) / (1 + |y|))^2), so rows with very
         large targets do not dominate the fitness.
+    mse_scale : float, optional
+        Divides the MSE (only when error_metric="mse"). Use the training
+        targets' variance for normalized fitness, or 1.0 (default) for raw MSE.
     
     Returns
     -------
@@ -49,7 +52,7 @@ def fitness(node, x, y, complexity_weight=0, error_metric="mse"):
     if error_metric == "scaled":
         error = np.mean(((predictions - y) / (1.0 + np.abs(y))) ** 2)
     elif error_metric == "mse":
-        error = mean_squared_error(y, predictions)
+        error = mean_squared_error(y, predictions) / mse_scale
     else:
         raise ValueError(f"Unknown error metric: {error_metric}")
 

@@ -20,7 +20,7 @@ import time
 
 from fitness import fitness
 from data import load_dataset, split_data
-from tree import crossover, mutate, depth, size, to_string, generate_population
+import tree as tree_module
 
 
 def tournament_select(population, scores, k):
@@ -189,6 +189,7 @@ def run(variables_path):
     error_metric = variables.get("error_metric", "mse")
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
+    tree_module.WIDE_CONSTANTS = variables.get("wide_constants", False)
 
     # Data cleaning (dataset2): x3 is recorded to 2 decimals, so rows with
     # tiny x3 are too imprecise to predict y. Drop them before splitting.
@@ -208,6 +209,17 @@ def run(variables_path):
         train_fraction=variables["train_fraction"],
         seed=variables["split_seed"],
     )
+
+    # Optional normalized MSE: divide by training-target variance
+    # (training data only), so fitness is on a 0-1 scale
+    mse_scale = 1.0
+    if variables.get("normalize_fitness", False):
+        mse_scale = float(np.var(y_train))
+        if not np.isfinite(mse_scale) or mse_scale <= 0:
+            raise ValueError(
+                "Normalized fitness requires positive, finite "
+                "training-target variance."
+            )
 
     # Build one results filename for the whole experiment
     dataset_name = os.path.splitext(
@@ -261,6 +273,7 @@ def run(variables_path):
                         y_train,
                         complexity_weight = variables["complexity_weight"],
                         error_metric = error_metric,
+                        mse_scale = mse_scale
                     )
                     for tree in population
                 ]
@@ -312,6 +325,15 @@ def run(variables_path):
             test_scaled = fitness(best_so_far, x_test, y_test, error_metric="scaled")
             print("Train scaled error:", train_scaled)
             print("Test scaled error:", test_scaled)
+
+            # Sanity check: best single constant (fit on training data only),
+            # scored with the same scaled error on the test set
+            weights = 1.0 / (1.0 + np.abs(y_train)) ** 2
+            constant = np.sum(weights * y_train) / np.sum(weights)
+            baseline_test = np.mean(((constant - y_test) / (1.0 + np.abs(y_test))) ** 2)
+            print("Constant baseline:", constant)
+            print("Constant test scaled error:", baseline_test)
+            
             summary.append([seed, to_string(best_so_far), size(best_so_far),
                             train_mse, test_mse, train_scaled, test_scaled])
 
