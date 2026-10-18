@@ -3,7 +3,7 @@ import numpy as np
 
 from tree import evaluate, size, Node
 
-def fitness(node, x, y, complexity_weight=0):
+def fitness(node, x, y, complexity_weight=0, error_metric="mse"):
     """
     Score a tree using mean squared error and a size penalty.
     Return a float with the fitness score. Lower = better.
@@ -29,7 +29,11 @@ def fitness(node, x, y, complexity_weight=0):
     complexity_weight : float, optional
         Penalty per node (y in Luke & Panait's formula). Defaults to 0,
         meaning no size penalty.
-
+    error_metric : str, optional
+        "mse" (default) for mean squared error, or "scaled" for relative
+        error, mean(((prediction - y) / (1 + |y|))^2), so rows with very
+        large targets do not dominate the fitness.
+    
     Returns
     -------
     float 
@@ -40,11 +44,17 @@ def fitness(node, x, y, complexity_weight=0):
     # Give trees with NaN or infinite predictions the worst possible fitness.
     if not np.all(np.isfinite(predictions)):
         return float("inf")
-    
-    mse = mean_squared_error(y, predictions)
+    # Error defaults to MSE, but can be scaled for relative error metric
+    # if error metric is coded as "scaled" 
+    if error_metric == "scaled":
+        error = np.mean(((predictions - y) / (1.0 + np.abs(y))) ** 2)
+    elif error_metric == "mse":
+        error = mean_squared_error(y, predictions)
+    else:
+        raise ValueError(f"Unknown error metric: {error_metric}")
 
     # Size penalty: linear parametric parsimony pressure (Luke & Panait 2006)
-    score = mse + complexity_weight * size(node)
+    score = error + complexity_weight * size(node)
 
     if not np.isfinite(score):
         return float("inf")

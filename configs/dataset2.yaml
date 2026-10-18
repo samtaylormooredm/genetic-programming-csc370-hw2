@@ -15,22 +15,23 @@ init_max_depth: 5
 depth_limit: 17 # (Luke & Panait 2006, Sec. 3, p. 6)
 
 # Selection and genetic operations
-tournament_size: 7 # (Luke & Panait 2006, Sec. 3, p. 6) - how many trees compete when a
-  # parent is selected
+tournament_size: 7 # (Luke & Panait 2006, Sec. 3, p. 6)
 crossover_rate: 0.9 # (Koza tutorial)
 mutation_rate: 0.01 # (Koza tutorial)
 # Remaining 9% probability selects reproduction
 
-# Linear size penalty; scaled for MSE after cleaning
-complexity_weight: 1 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
+# Random immigrants
+immigrant_fraction: 0.05 # (Cobb & Grefenstette, ICGA 1993; 
+# best rate for an unchanging problem)
 
-# Data cleaning: x3 is recorded to 2 decimals. Below x3 = 0.5, rounding
-# changes 1/x3^2 by more than 2%, and those rows' huge y values dominate
-# MSE. Drops 1,232 of 25,000 rows (~5%).
-min_x3: 0.5
+# Relative-error fitness plus a linear size penalty
+error_metric: scaled
+
+# Linear size penalty; scaled for MSE after cleaning
+complexity_weight: 0.00001 # (Penalty method: Luke & Panait 2006, Sec. 5, p. 10)
 
 # Divide x1 and x2 by 1e6 so inputs match the constant range [-10, 10]
 input_scale: [1000000, 1000000, 1]
 
 # One CSV containing all seeds
-log_file: "results/{dataset}_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"
+log_file: "results/{dataset}_B2_pop{population_size}_gen{generations}_penalty{complexity_weight}.csv"

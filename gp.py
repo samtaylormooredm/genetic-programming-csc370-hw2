@@ -123,10 +123,24 @@ def next_gen(population, scores, variables):
     list of Node
         The new population, exactly population_size trees long.
     """
+    # Increase diversity: random immigrants where a fraction of each new generation
+    # are replacedwith fresh random trees (Cobb & Grefenstette 1993).
+    population_size = variables["population_size"]
+    num_immigrants = int(population_size * variables.get("immigrant_fraction", 0.0))
+    num_offspring = population_size - num_immigrants
+
     new_population = []
-    while len(new_population) < variables["population_size"]:
+    while len(new_population) < num_offspring:
         new_population.extend(make_children(population, scores, variables))
-    return new_population[:variables["population_size"]]
+    new_population = new_population[:num_offspring]
+
+    immigrants = generate_population(
+        num_immigrants,
+        variables["init_max_depth"],
+        variables["num_variables"],
+        variables["integer_constants"],
+    )
+    return new_population + immigrants
 
 def diversity(population):
     """
@@ -171,6 +185,8 @@ def run(variables_path):
         variables = yaml.safe_load(f)
 
     seeds = variables["seeds"]
+    # "mse" (default) or "scaled" relative error
+    error_metric = variables.get("error_metric", "mse")
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
 
@@ -243,7 +259,8 @@ def run(variables_path):
                         tree,
                         x_train,
                         y_train,
-                        variables["complexity_weight"],
+                        complexity_weight = variables["complexity_weight"],
+                        error_metric = error_metric,
                     )
                     for tree in population
                 ]
@@ -290,8 +307,13 @@ def run(variables_path):
             print("Train MSE:", train_mse)
             print("Test MSE:", test_mse)
             print(f"Runtime: {elapsed:.2f} seconds")
+            
+            train_scaled = fitness(best_so_far, x_train, y_train, error_metric="scaled")
+            test_scaled = fitness(best_so_far, x_test, y_test, error_metric="scaled")
+            print("Train scaled error:", train_scaled)
+            print("Test scaled error:", test_scaled)
             summary.append([seed, to_string(best_so_far), size(best_so_far),
-                train_mse, test_mse])
+                            train_mse, test_mse, train_scaled, test_scaled])
 
             # Preserve completed rows before starting the next seed
             f.flush()
@@ -300,20 +322,25 @@ def run(variables_path):
     summary_file = log_file.replace(".csv", "_summary.csv")
     with open(summary_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["seed", "formula", "size", "train_mse", "test_mse"])
+        writer.writerow(["seed", "formula", "size", "train_mse", "test_mse",
+                         "train_scaled", "test_scaled"])
         writer.writerows(summary)
 
-    # Pick the best model by test MSE (HW2 handout, "On Overfitting");
+    # Pick the best model by test error (HW2 handout, "On Overfitting"),
+    # using the same error measure as the fitness function;
     # ties within 1e-9 go to the smaller tree (our choice)
+    col = 6 if error_metric == "scaled" else 4
+    label = "test scaled error" if error_metric == "scaled" else "test MSE"
     winner = summary[0]
     for row in summary:
-        clearly_better = row[4] < winner[4] - 1e-9
-        tied_but_smaller = abs(row[4] - winner[4]) <= 1e-9 and row[2] < winner[2]
+        clearly_better = row[col] < winner[col] - 1e-9
+        tied_but_smaller = abs(row[col] - winner[col]) <= 1e-9 and row[2] < winner[2]
         if clearly_better or tied_but_smaller:
             winner = row
 
-    print("\nBest overall (picked by test MSE, ties broken by size):")
-    print("Seed:", winner[0], "| Size:", winner[2], "| Test MSE:", winner[4])
+    print(f"\nBest overall (picked by {label}, ties broken by size):")
+    print("Seed:", winner[0], "| Size:", winner[2],
+          "| Test MSE:", winner[4], "| Test scaled error:", winner[6])
     print("Formula:", winner[1])
     print("\nGeneration log saved to", log_file)
     print("Summary saved to", summary_file)
