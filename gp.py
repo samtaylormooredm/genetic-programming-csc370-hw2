@@ -174,11 +174,6 @@ def run(variables_path):
     ----------
     variables_path : str
         Path to the YAML config file.
-
-    Notes
-    -----
-    Writes one combined generation CSV with a seed column. Prints each
-    run's best formula, tree size, training/test MSE, and runtime.
     """
 
      # Initialize with variables and splitting dataset
