@@ -20,6 +20,7 @@ import time
 
 from fitness import fitness
 from data import load_dataset, split_data
+from tree import crossover, mutate, depth, size, to_string, generate_population
 import tree as tree_module
 
 
