@@ -123,10 +123,27 @@ def next_gen(population, scores, variables):
     list of Node
         The new population, exactly population_size trees long.
     """
+    population_size = variables["population_size"]
+    immigrant_fraction = variables.get("immigrant_fraction", 0.0)
+    num_immigrants = int(population_size * immigrant_fraction)
+    num_offspring = population_size - num_immigrants
+
     new_population = []
-    while len(new_population) < variables["population_size"]:
-        new_population.extend(make_children(population, scores, variables))
-    return new_population[:variables["population_size"]]
+    while len(new_population) < num_offspring:
+        new_population.extend(
+            make_children(population, scores, variables)
+        )
+
+    new_population = new_population[:num_offspring]
+
+    immigrants = generate_population(
+        num_immigrants,
+        variables["init_max_depth"],
+        variables["num_variables"],
+        variables["integer_constants"],
+    )
+
+    return new_population + immigrants
 
 def diversity(population):
     """
@@ -163,10 +180,8 @@ def run(variables_path):
     Writes one combined generation CSV with a seed column. Prints each
     run's best formula, tree size, training/test MSE, and runtime.
     """
-    
-    # one row per seed: seed, formula, size, train_mse, test_mse
-    summary = []
-    # Initialize with variables and splitting dataset
+
+     # Initialize with variables and splitting dataset
     with open(variables_path) as f:
         variables = yaml.safe_load(f)
 
@@ -209,6 +224,8 @@ def run(variables_path):
     if log_dir:
         os.makedirs(log_dir, exist_ok=True)
 
+    summary = []
+
     # Write all seeds to one CSV
     with open(log_file, "w", newline="") as f:
         writer = csv.writer(f)
@@ -243,7 +260,8 @@ def run(variables_path):
                         tree,
                         x_train,
                         y_train,
-                        variables["complexity_weight"],
+                        complexity_weight=variables["complexity_weight"],
+                        error_metric=variables.get("error_metric", "mse"),
                     )
                     for tree in population
                 ]
@@ -280,15 +298,42 @@ def run(variables_path):
                 if gen < variables["generations"] - 1:
                     population = next_gen(population, scores, variables)
 
-            # Report plain MSE
+            # Report raw MSE.
             train_mse = fitness(best_so_far, x_train, y_train)
             test_mse = fitness(best_so_far, x_test, y_test)
-            elapsed = time.perf_counter() - start
 
             print("\nBest formula:", to_string(best_so_far))
             print("Size:", size(best_so_far))
             print("Train MSE:", train_mse)
             print("Test MSE:", test_mse)
+
+            # Additional diagnostics for the scaled-error experiment.
+            if variables.get("error_metric", "mse") == "scaled":
+                train_scaled = fitness(
+                    best_so_far, x_train, y_train,
+                    error_metric="scaled",
+                )
+                test_scaled = fitness(
+                    best_so_far, x_test, y_test,
+                    error_metric="scaled",
+                )
+
+                # Fit the best constant using training data only.
+                weights = 1.0 / (1.0 + np.abs(y_train)) ** 2
+                constant = (
+                    np.sum(weights * y_train) / np.sum(weights)
+                )
+
+                baseline_test = np.mean(
+                    ((constant - y_test) / (1.0 + np.abs(y_test))) ** 2
+                )
+
+                print("Train scaled error:", train_scaled)
+                print("Test scaled error:", test_scaled)
+                print("Constant baseline:", constant)
+                print("Constant test scaled error:", baseline_test)
+
+            elapsed = time.perf_counter() - start
             print(f"Runtime: {elapsed:.2f} seconds")
             summary.append([seed, to_string(best_so_far), size(best_so_far),
                 train_mse, test_mse])

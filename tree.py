@@ -96,8 +96,15 @@ def generate_random_terminal(num_variables, integer_constants=True):
     # For constants, generate random # btwn -10 and 10
     # NOTE: Could be potential place to adjust for experimentation
     if integer_constants:
-        return Node("constant", random.randint(-10,10))
-    return Node("constant", random.uniform(-10,10))
+        return Node("constant", random.randint(-10, 10))
+
+    if random.random() < 0.5:
+        value = random.uniform(-10, 10)
+    else:
+        sign = random.choice([-1.0, 1.0])
+        value = sign * 10.0 ** random.uniform(-12, 12)
+
+    return Node("constant", value)
 
 def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
     """
@@ -414,17 +421,8 @@ def mutate(node, max_depth, num_variables, integer_constants=True):
         integer_constants = integer_constants
     )
 
-    # NOTE: Currently allows pretty significant mutations, could possibly test with having
-    # replacement subtree be at most depth 2:
-    # remaining_depth = max_depth - len(path)
-    # replacement_depth = min(remaining_depth, 2)
-
-    # replacement = generate_random_tree(
-    #     max_depth=replacement_depth,
-    #     num_variables=num_variables,
-    # )
-
     return replace_subtree(node, path, replacement)
+
 
 def crossover(parent1, parent2, max_depth):
     """

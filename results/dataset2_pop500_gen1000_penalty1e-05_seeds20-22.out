@@ -1,0 +1,339 @@
+
+--- Seed 20 ---
+Generation 0 best so far: 0.8077450328709551
+Generation 10 best so far: 0.3664000383823083
+Generation 20 best so far: 0.3664000383823083
+Generation 30 best so far: 0.2749458814865464
+Generation 40 best so far: 0.18627264266969956
+Generation 50 best so far: 0.12062427588428545
+Generation 60 best so far: 0.11366178511792671
+Generation 70 best so far: 0.07051556234619806
+Generation 80 best so far: 0.030716900016685075
+Generation 90 best so far: 0.02915330088732473
+Generation 100 best so far: 0.028186936084087157
+Generation 110 best so far: 0.02621357763740142
+Generation 120 best so far: 0.022283828149248966
+Generation 130 best so far: 0.019234301855867577
+Generation 140 best so far: 0.016396775543729643
+Generation 150 best so far: 0.016396775543729643
+Generation 160 best so far: 0.015794859159170175
+Generation 170 best so far: 0.004782664916610692
+Generation 180 best so far: 0.003232701108620525
+Generation 190 best so far: 0.0024939444290142517
+Generation 200 best so far: 0.0024739443920119716
+Generation 210 best so far: 0.002255304433642703
+Generation 220 best so far: 0.0021157208820742216
+Generation 230 best so far: 0.0019907602081997607
+Generation 240 best so far: 0.0019750113744702704
+Generation 250 best so far: 0.001955108941386073
+Generation 260 best so far: 0.0019550550719261966
+Generation 270 best so far: 0.0019550550719261966
+Generation 280 best so far: 0.0019350508251943974
+Generation 290 best so far: 0.0019350468421865798
+Generation 300 best so far: 0.0019350468421865798
+Generation 310 best so far: 0.0019350468421865798
+Generation 320 best so far: 0.0019151185376840778
+Generation 330 best so far: 0.0019151185376840778
+Generation 340 best so far: 0.0018505872206136431
+Generation 350 best so far: 0.0018505872206136431
+Generation 360 best so far: 0.0018505872206136431
+Generation 370 best so far: 0.0018505872206136431
+Generation 380 best so far: 0.0018505872206136431
+Generation 390 best so far: 0.0018505872206136431
+Generation 400 best so far: 0.0018505872206136431
+Generation 410 best so far: 0.0018505872206136431
+Generation 420 best so far: 0.0018505872206136431
+Generation 430 best so far: 0.0018505872206136431
+Generation 440 best so far: 0.00164598469631261
+Generation 450 best so far: 0.00164598469631261
+Generation 460 best so far: 0.0016291645055453838
+Generation 470 best so far: 0.0016291645055453838
+Generation 480 best so far: 0.0016291645055453838
+Generation 490 best so far: 0.0016091645055452974
+Generation 500 best so far: 0.0015893293699611797
+Generation 510 best so far: 0.0015893293699611797
+Generation 520 best so far: 0.0015893293699611797
+Generation 530 best so far: 0.0015759022928088949
+Generation 540 best so far: 0.0015759022928088949
+Generation 550 best so far: 0.0015759022928088949
+Generation 560 best so far: 0.0015759022928088949
+Generation 570 best so far: 0.0015759022928088949
+Generation 580 best so far: 0.0015759022928088949
+Generation 590 best so far: 0.0015759022928088949
+Generation 600 best so far: 0.0015759022928088949
+Generation 610 best so far: 0.0015759022928088949
+Generation 620 best so far: 0.0015692368175113372
+Generation 630 best so far: 0.0015692368175113372
+Generation 640 best so far: 0.0015507747049306577
+Generation 650 best so far: 0.0015507740394990915
+Generation 660 best so far: 0.0015507740394990915
+Generation 670 best so far: 0.0015107747822558578
+Generation 680 best so far: 0.0015107747049282636
+Generation 690 best so far: 0.001505984101076534
+Generation 700 best so far: 0.001505984101076534
+Generation 710 best so far: 0.001505984101076534
+Generation 720 best so far: 0.001505984101076534
+Generation 730 best so far: 0.001505984101076534
+Generation 740 best so far: 0.001505984101076534
+Generation 750 best so far: 0.001505984101076534
+Generation 760 best so far: 0.0014907740075982838
+Generation 770 best so far: 0.0014907740075982838
+Generation 780 best so far: 0.0014907740075982838
+Generation 790 best so far: 0.0014907740075982838
+Generation 800 best so far: 0.0014707747049289668
+Generation 810 best so far: 0.0014707747049289668
+Generation 820 best so far: 0.0014707747049289668
+Generation 830 best so far: 0.0014707747049289668
+Generation 840 best so far: 0.0014707747049289668
+Generation 850 best so far: 0.0014221202806949625
+Generation 860 best so far: 0.0014221202806949625
+Generation 870 best so far: 0.0014221202806949625
+Generation 880 best so far: 0.0014221202806949625
+Generation 890 best so far: 0.0014221202806949625
+Generation 900 best so far: 0.0014221202806949625
+Generation 910 best so far: 0.0014221202806949625
+Generation 920 best so far: 0.0014221202806949625
+Generation 930 best so far: 0.0014221202806949625
+Generation 940 best so far: 0.0014221202806949625
+Generation 950 best so far: 0.0014221202806949625
+Generation 960 best so far: 0.0014221202806949625
+Generation 970 best so far: 0.0014221202806949625
+Generation 980 best so far: 0.0014221202806949625
+Generation 990 best so far: 0.0014221202806949625
+
+Best formula: (((((1.5533477335591037 - ((((x1 * x2) / (1.5533477335591037 / 4.847521942247518)) / (1.5533477335591037 / 7.93620801287236)) - ((((((x1 * x2) / x3) + 1.5533477335591037) / 7.93620801287236) - (x1 * x2)) / 4.847521942247518))) / x3) - 4.847521942247518) * -4.121528354621327e-12) / x3)
+Size: 37
+Train MSE: 1.474527712225556e+18
+Test MSE: 4836701037213689.0
+Train scaled error: 0.0010521202806949624
+Test scaled error: 0.000923664619021635
+Constant baseline: 1.8237689195344524
+Constant test scaled error: 0.8071640536584651
+Runtime: 518.98 seconds
+
+--- Seed 21 ---
+Generation 0 best so far: 0.8085493217241126
+Generation 10 best so far: 0.8037098088585627
+Generation 20 best so far: 0.7465919174667096
+Generation 30 best so far: 0.7080780973407353
+Generation 40 best so far: 0.7001784297113065
+Generation 50 best so far: 0.6990514106832716
+Generation 60 best so far: 0.6988114106832716
+Generation 70 best so far: 0.6759592172002516
+Generation 80 best so far: 0.6726432719810755
+Generation 90 best so far: 0.6482146640620691
+Generation 100 best so far: 0.6482146640620691
+Generation 110 best so far: 0.6480252286345458
+Generation 120 best so far: 0.6458806569085614
+Generation 130 best so far: 0.6249558016147161
+Generation 140 best so far: 0.6193472531925378
+Generation 150 best so far: 0.6193271836241231
+Generation 160 best so far: 0.6013027510541151
+Generation 170 best so far: 0.6013027510541151
+Generation 180 best so far: 0.5996257449578457
+Generation 190 best so far: 0.5996257449578457
+Generation 200 best so far: 0.5893560606117977
+Generation 210 best so far: 0.562100609899504
+Generation 220 best so far: 0.5513692923569846
+Generation 230 best so far: 0.5335635889786116
+Generation 240 best so far: 0.5313423414273234
+Generation 250 best so far: 0.5102157070662529
+Generation 260 best so far: 0.4894843929719978
+Generation 270 best so far: 0.48726856816217895
+Generation 280 best so far: 0.4868485681621789
+Generation 290 best so far: 0.48670856816217895
+Generation 300 best so far: 0.48558948590085255
+Generation 310 best so far: 0.4845442599708067
+Generation 320 best so far: 0.4838422540904978
+Generation 330 best so far: 0.4834603318627485
+Generation 340 best so far: 0.48301687763350315
+Generation 350 best so far: 0.4829368776335032
+Generation 360 best so far: 0.48270304337559944
+Generation 370 best so far: 0.4824879586777209
+Generation 380 best so far: 0.4822879586777209
+Generation 390 best so far: 0.4822870795564016
+Generation 400 best so far: 0.4822870795564016
+Generation 410 best so far: 0.4819541096224047
+Generation 420 best so far: 0.4818341096224047
+Generation 430 best so far: 0.4817941096224047
+Generation 440 best so far: 0.4682234169909655
+Generation 450 best so far: 0.4651087950720256
+Generation 460 best so far: 0.4618658263650878
+Generation 470 best so far: 0.46172067491474095
+Generation 480 best so far: 0.45868857247788064
+Generation 490 best so far: 0.4173388364995717
+Generation 500 best so far: 0.4173388364995717
+Generation 510 best so far: 0.4173388364995717
+Generation 520 best so far: 0.4173388364995717
+Generation 530 best so far: 0.38627815585298875
+Generation 540 best so far: 0.28442328188536775
+Generation 550 best so far: 0.22791048115566628
+Generation 560 best so far: 0.22656910449625448
+Generation 570 best so far: 0.2257786406477948
+Generation 580 best so far: 0.22404542615752127
+Generation 590 best so far: 0.22300016382892096
+Generation 600 best so far: 0.22251849975254154
+Generation 610 best so far: 0.2219606667804698
+Generation 620 best so far: 0.22156660555997731
+Generation 630 best so far: 0.22108084162601233
+Generation 640 best so far: 0.22097914667450297
+Generation 650 best so far: 0.21814373430069323
+Generation 660 best so far: 0.21813602377219493
+Generation 670 best so far: 0.2116458059013732
+Generation 680 best so far: 0.21146580590128344
+Generation 690 best so far: 0.2108085155501169
+Generation 700 best so far: 0.21023631423578582
+Generation 710 best so far: 0.20930720514271234
+Generation 720 best so far: 0.20930720514271234
+Generation 730 best so far: 0.20072250837664257
+Generation 740 best so far: 0.1996928885731382
+Generation 750 best so far: 0.1956917691968893
+Generation 760 best so far: 0.19041156109061502
+Generation 770 best so far: 0.18148251916509206
+Generation 780 best so far: 0.17956942990452984
+Generation 790 best so far: 0.17777861745783163
+Generation 800 best so far: 0.17610353324941777
+Generation 810 best so far: 0.16607419004181448
+Generation 820 best so far: 0.15928704324692292
+Generation 830 best so far: 0.14123440172765775
+Generation 840 best so far: 0.11923119645280081
+Generation 850 best so far: 0.09661265168873842
+Generation 860 best so far: 0.09411230660873805
+Generation 870 best so far: 0.09337058843007026
+Generation 880 best so far: 0.09190001622599044
+Generation 890 best so far: 0.08652302917353705
+Generation 900 best so far: 0.08639862730254805
+Generation 910 best so far: 0.07816570821448549
+Generation 920 best so far: 0.07736949026196943
+Generation 930 best so far: 0.07698658007420561
+Generation 940 best so far: 0.0754633311543332
+Generation 950 best so far: 0.07477576465112516
+Generation 960 best so far: 0.07286282242999159
+Generation 970 best so far: 0.06260207079577254
+Generation 980 best so far: 0.062395715519296964
+Generation 990 best so far: 0.05499102616750387
+
+Best formula: ((((((x2 / x2) - (x1 * x2)) + (-3.1143687638889637e-09 * ((x3 / x2) - (x1 * ((-46708746.86021968 + (((-3.1143687638889637e-09 / (((-46708746.86021968 + (x3 - (x3 - -16084965.204449184))) - -46708746.86021968) * -16084965.204449184)) + (-6.97802499796482 + (x3 - (-16084965.204449184 / (x2 / (x3 - 5.57124809770173)))))) * x2)) * (x2 - (((x3 + (-6.97802499796482 + ((x3 - (x2 / x3)) - (x2 / x3)))) - x2) - x2))))))) / (((108327338672.82057 - x3) - ((-6.97802499796482 + (x3 - (-3.1143687638889637e-09 / ((x3 - 2.4037234570906936) * (7.738744857518661 / (x3 - (x3 - -16084965.204449184))))))) * (108327338672.82057 - ((-6.97802499796482 + (x3 - (-16084965.204449184 / (x2 / (x3 - 5.57124809770173))))) + (x3 * x2))))) + -941553532441.431)) + -3.1143687638889637e-09) + ((-3.1143687638889637e-09 / (x2 / (2.4037234570906936 + x2))) / ((-3.1143687638889637e-09 / x2) - ((-3.1143687638889637e-09 / x2) - -6.97802499796482))))
+Size: 127
+Train MSE: 1.474528462125033e+18
+Test MSE: 4837096034296886.0
+Train scaled error: 0.053403426162524845
+Test scaled error: 0.054760124209229405
+Constant baseline: 1.8237689195344524
+Constant test scaled error: 0.8071640536584651
+Runtime: 1254.25 seconds
+
+--- Seed 22 ---
+Generation 0 best so far: 0.8036537619239624
+Generation 10 best so far: 0.8036537619239624
+Generation 20 best so far: 0.7916344071509095
+Generation 30 best so far: 0.3304262637641442
+Generation 40 best so far: 0.2044930616798098
+Generation 50 best so far: 0.1905423527213363
+Generation 60 best so far: 0.11410312552145246
+Generation 70 best so far: 0.10767149879965449
+Generation 80 best so far: 0.0871206120190919
+Generation 90 best so far: 0.08157677884460077
+Generation 100 best so far: 0.04885626876801202
+Generation 110 best so far: 0.02127339074851657
+Generation 120 best so far: 0.009480260819861006
+Generation 130 best so far: 0.006355069512068118
+Generation 140 best so far: 0.005596051952119738
+Generation 150 best so far: 0.00552888394814631
+Generation 160 best so far: 0.005433067125156122
+Generation 170 best so far: 0.00515720557249146
+Generation 180 best so far: 0.004675079742215256
+Generation 190 best so far: 0.004515791362724288
+Generation 200 best so far: 0.004357514149313905
+Generation 210 best so far: 0.004265033206058611
+Generation 220 best so far: 0.004111767083407167
+Generation 230 best so far: 0.004111767083407167
+Generation 240 best so far: 0.0034465859080172146
+Generation 250 best so far: 0.002345424392292415
+Generation 260 best so far: 0.00228568719380966
+Generation 270 best so far: 0.002285423599586718
+Generation 280 best so far: 0.0021853873875846436
+Generation 290 best so far: 0.0021853873875846436
+Generation 300 best so far: 0.0021853873875846436
+Generation 310 best so far: 0.0021656801121009636
+Generation 320 best so far: 0.0021053943548096634
+Generation 330 best so far: 0.0021053943548096634
+Generation 340 best so far: 0.0021053943548096634
+Generation 350 best so far: 0.0021053943548096634
+Generation 360 best so far: 0.002074290508082029
+Generation 370 best so far: 0.0020346630436087554
+Generation 380 best so far: 0.001923289830894464
+Generation 390 best so far: 0.0018632928487004575
+Generation 400 best so far: 0.0018632928487004575
+Generation 410 best so far: 0.0018632928487004575
+Generation 420 best so far: 0.0018632928487004575
+Generation 430 best so far: 0.0018632928487004575
+Generation 440 best so far: 0.0018632928487004575
+Generation 450 best so far: 0.0018540500358879093
+Generation 460 best so far: 0.0018540500358879093
+Generation 470 best so far: 0.0018540500358879093
+Generation 480 best so far: 0.0018132060315570052
+Generation 490 best so far: 0.0018132060315570052
+Generation 500 best so far: 0.0018132060315570052
+Generation 510 best so far: 0.0018132060315570052
+Generation 520 best so far: 0.0017958672901834342
+Generation 530 best so far: 0.0017802427960255224
+Generation 540 best so far: 0.0017757316789304976
+Generation 550 best so far: 0.0017757316789304976
+Generation 560 best so far: 0.0017757316789304976
+Generation 570 best so far: 0.0017757316789304976
+Generation 580 best so far: 0.0017602286243791122
+Generation 590 best so far: 0.0017602169256215197
+Generation 600 best so far: 0.0017602169256215197
+Generation 610 best so far: 0.0017602169256215197
+Generation 620 best so far: 0.0017602169256215197
+Generation 630 best so far: 0.0017602169256215197
+Generation 640 best so far: 0.0017602169256215197
+Generation 650 best so far: 0.0017602169256215197
+Generation 660 best so far: 0.0017602169256215197
+Generation 670 best so far: 0.0017602169256215197
+Generation 680 best so far: 0.0017602169256215197
+Generation 690 best so far: 0.0017602169256215197
+Generation 700 best so far: 0.0017602169256215197
+Generation 710 best so far: 0.0017602169256215197
+Generation 720 best so far: 0.0017602169256215197
+Generation 730 best so far: 0.0017602169256215197
+Generation 740 best so far: 0.0017602169256215197
+Generation 750 best so far: 0.0017602169256215197
+Generation 760 best so far: 0.0017602169256215197
+Generation 770 best so far: 0.0017602169256215197
+Generation 780 best so far: 0.0017602169256215197
+Generation 790 best so far: 0.0017602169256215197
+Generation 800 best so far: 0.0017561963845009426
+Generation 810 best so far: 0.0017561963845009426
+Generation 820 best so far: 0.001740240991700443
+Generation 830 best so far: 0.001740240991700443
+Generation 840 best so far: 0.0017402268190406507
+Generation 850 best so far: 0.0017402268190406507
+Generation 860 best so far: 0.0017402268190406507
+Generation 870 best so far: 0.0017402268190406507
+Generation 880 best so far: 0.0017402268190406507
+Generation 890 best so far: 0.0017402268190406507
+Generation 900 best so far: 0.0017402268190406507
+Generation 910 best so far: 0.0017402268190406507
+Generation 920 best so far: 0.0017402268190406507
+Generation 930 best so far: 0.0017402268190406507
+Generation 940 best so far: 0.0017402268190406507
+Generation 950 best so far: 0.0017402268190406507
+Generation 960 best so far: 0.0017402268190406507
+Generation 970 best so far: 0.001740154016703902
+Generation 980 best so far: 0.0017401183857574962
+Generation 990 best so far: 0.0017401183857574962
+
+Best formula: ((((-3.7227146575074975e-05 - ((-1.852737948416177 - (x2 / (x3 / ((x2 + x2) / (-924738845020.9717 / (x1 * -1.852737948416177)))))) / x2)) / -0.5426587093740309) + (((((1.5966677997680694 + (x2 / (24837714609.82031 / (1.5966677997680694 - x1)))) - ((((24837714609.82031 * -1.852737948416177) - (-924738845020.9717 - -1.852737948416177)) + x3) / (24837714609.82031 - -924738845020.9717))) / -0.5426587093740309) + 1.2627568110061755) / x3)) / x3)
+Size: 53
+Train MSE: 1.4745276389048607e+18
+Test MSE: 4836772490116344.0
+Train scaled error: 0.001210118385757496
+Test scaled error: 0.0011328118881031662
+Constant baseline: 1.8237689195344524
+Constant test scaled error: 0.8071640536584651
+Runtime: 776.23 seconds
+
+Results saved to results/trialdataset2_scaled_wide_constants_tourn3_mut10_imm10_pop500_gen1000_penalty1e-05.csv
+Runtime: 2549.48 seconds (42.49 minutes)

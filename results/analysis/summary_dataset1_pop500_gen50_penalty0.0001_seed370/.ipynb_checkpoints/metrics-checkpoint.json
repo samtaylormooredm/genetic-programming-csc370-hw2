@@ -1,0 +1,29 @@
+{
+  "dataset": "dataset1",
+  "model_file": "results/summary_dataset1_pop500_gen50_penalty0.0001.csv",
+  "seed": 370,
+  "train_fraction": 0.8,
+  "split_seed": 42,
+  "formula": "((9 - x1) + ((5 + (x1 * (x1 + -4))) - x1))",
+  "preprocessing": "No filtering or input scaling",
+  "train": {
+    "rows": 20000,
+    "mse": 0.0005953816485000001,
+    "rmse": 0.02440044361277065,
+    "mae": 0.017409985000000024,
+    "median_absolute_error": 0.010899999999999466,
+    "scaled_error": 8.865914322495675e-07,
+    "fraction_within_0.01_times_1_plus_abs_y": 1.0,
+    "fraction_within_0.05_times_1_plus_abs_y": 1.0
+  },
+  "test": {
+    "rows": 5000,
+    "mse": 0.0005941104340000018,
+    "rmse": 0.024374380689568334,
+    "mae": 0.01738826000000003,
+    "median_absolute_error": 0.010900000000001242,
+    "scaled_error": 8.916165862216182e-07,
+    "fraction_within_0.01_times_1_plus_abs_y": 1.0,
+    "fraction_within_0.05_times_1_plus_abs_y": 1.0
+  }
+}
