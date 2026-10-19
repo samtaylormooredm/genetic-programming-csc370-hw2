@@ -189,6 +189,17 @@ def run(variables_path):
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
 
+    # Data cleaning (dataset2): x3 is recorded to 2 decimals, so rows with
+    # tiny x3 are too imprecise to predict y. Drop them before splitting.
+    if "min_x3" in variables:
+        keep = x[:, 2] >= variables["min_x3"]
+        print("Dropping", int((~keep).sum()), "rows with x3 <", variables["min_x3"])
+        x, y = x[keep], y[keep]
+    # Input scaling: bring x1 and x2 (up to 10 million) onto the same
+    # scale as the random constants (-10 to 10)
+    if "input_scale" in variables:
+        x = x / np.array(variables["input_scale"])
+
     # Use the same training/test rows for every seed
     x_train, y_train, x_test, y_test = split_data(
         x,
@@ -212,6 +223,8 @@ def run(variables_path):
     log_dir = os.path.dirname(log_file)
     if log_dir:
         os.makedirs(log_dir, exist_ok=True)
+
+    summary = []
 
     # Write all seeds to one CSV
     with open(log_file, "w", newline="") as f:
@@ -322,11 +335,33 @@ def run(variables_path):
 
             elapsed = time.perf_counter() - start
             print(f"Runtime: {elapsed:.2f} seconds")
+            summary.append([seed, to_string(best_so_far), size(best_so_far),
+                train_mse, test_mse])
 
             # Preserve completed rows before starting the next seed
             f.flush()
 
-    print("\nResults saved to", log_file)
+    # Save one summary row per seed
+    summary_file = log_file.replace(".csv", "_summary.csv")
+    with open(summary_file, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["seed", "formula", "size", "train_mse", "test_mse"])
+        writer.writerows(summary)
+
+    # Pick the best model by test MSE (HW2 handout, "On Overfitting");
+    # ties within 1e-9 go to the smaller tree (our choice)
+    winner = summary[0]
+    for row in summary:
+        clearly_better = row[4] < winner[4] - 1e-9
+        tied_but_smaller = abs(row[4] - winner[4]) <= 1e-9 and row[2] < winner[2]
+        if clearly_better or tied_but_smaller:
+            winner = row
+
+    print("\nBest overall (picked by test MSE, ties broken by size):")
+    print("Seed:", winner[0], "| Size:", winner[2], "| Test MSE:", winner[4])
+    print("Formula:", winner[1])
+    print("\nGeneration log saved to", log_file)
+    print("Summary saved to", summary_file)
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else "configs/dataset1.yaml"

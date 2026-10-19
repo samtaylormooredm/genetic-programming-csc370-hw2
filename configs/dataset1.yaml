@@ -4,7 +4,7 @@ dataset: dataset1.csv
 integer_constants: true
 
 # GP seeds: each runs an independent experiment
-seeds: [370, 371, 372]
+seeds: [370, 371, 372, 373, 374, 375, 376, 377, 378, 379]
 
 # Fixed data split shared by all runs
 train_fraction: 0.8
@@ -19,8 +19,8 @@ depth_limit: 17 # (Luke & Panait 2006, Sec. 3, p. 6)
 # Selection and genetic operations
 tournament_size: 7 # (Luke & Panait 2006, Sec. 3, p. 6) how many trees compete when a
   # parent is selected
-crossover_rate: 0.9 # (Koza tutorial, p. 2)
-mutation_rate: 0.01 # (Koza tutorial, p. 2)
+crossover_rate: 0.9 # (Koza tutorial)
+mutation_rate: 0.01 # (Koza tutorial)
 # Remaining probability is reproduction (default = 9% with these settings)
 
 # Linear size penalty
