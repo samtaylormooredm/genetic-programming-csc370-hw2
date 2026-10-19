@@ -4,10 +4,10 @@ Genetic programming loop for symbolic regression.
 Evolves a population of expression trees using tournament selection,
 subtree crossover, subtree mutation, and reproduction, and logs
 per-generation statistics to a CSV file. All settings are read from a
-YAML config file (e.g. dataset1_variables.yaml).
+YAML config file (e.g. configs/dataset1.yaml).
 
 Run from the command line:
-    python gp.py dataset1_variables.yaml
+    python gp.py configs/dataset1.yaml
 """
 
 import yaml
@@ -197,16 +197,6 @@ def run(variables_path):
         seed=variables["split_seed"],
     )
 
-    # Normalize using training data only
-    mse_scale = 1.0
-    if variables.get("normalize_fitness", False):
-        mse_scale = float(np.var(y_train))
-        if not np.isfinite(mse_scale) or mse_scale <= 0:
-            raise ValueError(
-                "Normalized fitness requires positive, finite "
-                "training-target variance."
-            )
-
     # Build one results filename for the whole experiment
     dataset_name = os.path.splitext(
         os.path.basename(variables["dataset"])
@@ -258,7 +248,6 @@ def run(variables_path):
                         x_train,
                         y_train,
                         complexity_weight=variables["complexity_weight"],
-                        mse_scale=mse_scale,
                         error_metric=variables.get("error_metric", "mse"),
                     )
                     for tree in population
@@ -296,7 +285,7 @@ def run(variables_path):
                 if gen < variables["generations"] - 1:
                     population = next_gen(population, scores, variables)
 
-                        # Report raw MSE.
+            # Report raw MSE.
             train_mse = fitness(best_so_far, x_train, y_train)
             test_mse = fitness(best_so_far, x_test, y_test)
 

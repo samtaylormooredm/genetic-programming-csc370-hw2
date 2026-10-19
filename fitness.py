@@ -4,7 +4,7 @@ import numpy as np
 from tree import evaluate, size, Node
 
 def fitness(
-    node, x, y, complexity_weight=0, mse_scale=1.0,
+    node, x, y, complexity_weight=0,
     error_metric="mse"
 ):
     """
@@ -22,10 +22,6 @@ def fitness(
     complexity_weight : float, optional
         Penalty per node (y in Luke & Panait's formula). Defaults to 0,
         meaning no size penalty.
-    mse_scale : float, optional
-        Scale used to normalize MSE. Use training-target variance
-        for normalized fitness, or 1.0 for raw MSE. Defaults to 1.0.
-
     Returns
     -------
     float 
@@ -42,7 +38,7 @@ def fitness(
             ((predictions - y) / (1.0 + np.abs(y))) ** 2
         )
     elif error_metric == "mse":
-        error = mean_squared_error(y, predictions) / mse_scale
+        error = mean_squared_error(y, predictions)
     else:
         raise ValueError(f"Unknown error metric: {error_metric}")
 

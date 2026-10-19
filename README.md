@@ -1,83 +1,73 @@
 # Symbolic regression with genetic programming
 
-CSC 370 Homework 2 explores how genetic programming can evolve arithmetic
-expressions that predict two datasets. Each candidate equation is an expression
-tree. Evolution selects trees using prediction error and a penalty for tree size.
+CSC 370 Homework 2 evolves arithmetic expression trees to predict two datasets.
+Dataset 1 consistently recovers **x² − 6x + 14**. Our best overall dataset-2
+result, **seed 20**, comes from a **37-node tree** with test scaled error
+**0.000923665**. Away from protected division near x3 = 0, it simplifies
+approximately to:
 
-Dataset 1 consistently recovers the quadratic **x² − 6x + 14**. Dataset 2
-uses a scaled-error objective and broad constant sampling to model a target
-spanning many orders of magnitude. Its selected model achieves a test scaled
-error of **0.00079944** and a median absolute test error of **0.04167**.
-The largest errors occur near x3 = 0.
+$$
+\hat y \approx 6.656 \times 10^{-11}
+\left(
+\frac{x_1 x_2 - 0.0987}{x_3^2}
+- \frac{0.00161 x_1 x_2}{x_3^3}
++ \frac{0.3002}{x_3}
+\right).
+$$
+
+Simplifying further to its leading term approximates Newton's law of
+gravitational force:
+
+$$
+\hat y \approx 6.656 \times 10^{-11}\frac{x_1x_2}{x_3^2}
+$$
 
 ## Running the project
 
-Run commands from the repository root, with the project dependencies installed
-in your Python environment. The code uses NumPy, scikit-learn, PyYAML, and
-Matplotlib for analysis. Dataset CSV files are expected in `data/`.
+Install the dependencies and run from the repository root:
 
 ```bash
+pip install -r requirements.txt
 python -u gp.py configs/dataset1.yaml
 python -u gp.py configs/dataset2.yaml
 ```
 
-On the cluster:
+On the cluster, use `sbatch submit.sh configs/dataset2.yaml` (or dataset1).
+CSV inputs live in `data/`. YAML controls the split, seeds, population, tree
+limits, genetic operators, and complexity penalty. Dataset 2 now defaults to
+seeds 20–22, 1,000 generations, and penalty `1e-5`; reruns use a separate log
+filename to preserve the archived results. Dataset 1 defaults to seeds 370–372;
+the saved ten-seed experiment below used 370–379.
 
-```bash
-sbatch submit.sh configs/dataset1.yaml
-sbatch submit.sh configs/dataset2.yaml
-```
+## Trees, fitness, and bloat control
 
-YAML files control the dataset, data split, random seeds, population size,
-generation budget, genetic operations, and complexity penalty. To reproduce
-the results below, use the recorded settings and matching implementation;
-a different branch or current configuration may have different defaults.
+Each individual is an immutable binary `Node(kind, value, children)` tree.
+Operators are `+`, `-`, `*`, and protected `/`; terminals are constants or input
+columns (`x1` is column 0). Crossover swaps subtrees, mutation replaces a random
+subtree, and reproduction keeps a parent. Random immigrants add fresh trees.
 
-## Expression trees
-
-Each individual is an immutable binary expression tree represented by a frozen
-`Node(kind, value, children)` object. Operator nodes contain `+`, `-`, `*`, or
-protected `/` and have two children; terminal nodes contain an input variable
-or a numeric constant and have no children. Displayed `x1` corresponds to
-input-column index 0, and so on. Crossover swaps subtrees; mutation replaces a
-subtree; both construct new trees rather than modifying the parents.
-
-All `/` symbols in printed GP expressions mean protected division:
-
-`pdiv(a, b) = a / b if abs(b) >= 1e-6, otherwise 1`.
-
-Size counts every operator and terminal occurrence. Depth counts edges from
-the root to its deepest terminal, so a one-node tree has depth 0. Reported
-sizes/depths refer to the actual evolved trees, before any algebraic rewriting.
-
-## Fitness and bloat control
-
-Lower fitness is better. Dataset 1 uses:
+Every printed division means:
 
 ```text
-training MSE + 0.0001 * tree size
+pdiv(a, b) = a / b if abs(b) >= 1e-6, otherwise 1
 ```
 
-Dataset 2 uses:
+Size counts all operator and terminal occurrences. Depth counts edges, so a
+terminal has depth 0. All reported sizes refer to the evolved tree before
+algebraic rewriting. The configured depth limit is 17.
+
+Lower fitness is better:
 
 ```text
-np.mean(((prediction - target) / (1 + np.abs(target))) ** 2) + 0.000001 * tree_size
+Dataset 1: mean((prediction - target)**2) + 0.0001 * size
+Dataset 2: mean(((prediction - target)/(1 + abs(target)))**2) + 0.00001 * size
 ```
 
-The dataset-2 objective weights each squared residual by
-`1 / (1 + abs(target))**2`. This reduces the dominance of very large targets;
-it changes which errors the search prioritizes. It does not normalize the
-inputs or remove outliers. Raw MSE is reported separately because large
-absolute errors still matter.
-
-Printed **best so far** is the lowest penalized training fitness found so far
-within a seed. Final train/test errors below exclude the tree-size penalty.
-Scores from different fitness objectives should not be compared directly.
-
-Tree growth is controlled by a depth limit of 17 and a linear size penalty.
-For dataset 1, adding the penalty reduced seed 370's tree from 125 to 13 nodes
-(an 89.6% reduction), with effectively unchanged train/test MSE. Dataset 2
-still produces large trees, so the penalty does not eliminate bloat.
+The scaled objective reduces the dominance of extreme targets without filtering
+rows or scaling inputs. Printed **best so far** includes the size penalty;
+final train/test errors exclude it. Earlier dataset-2 runs used penalty `1e-6`,
+so their penalized fitness values are not directly comparable. Raw MSE remains
+useful for showing large absolute errors.
 
 ## Dataset 1 results
 
@@ -89,7 +79,6 @@ Fitness is training MSE + 0.0001 * node count.
 **Result files:**
 
 - Model summary: `results/summary_dataset1_pop500_gen50_penalty0.0001.csv`.
-- Generation log recorded for this experiment: `results/dataset1_pop500_gen50_penalty0.0001.csv`.
 
 All 10 formulas were independently expanded and verified to equal
 **f(x) = x^2 - 6x + 14**. Predictions reproduce the reported errors using the
@@ -153,202 +142,106 @@ and the 9-node compact example describe the same fitted function, but are
 not the same stored tree. The rewritten quadratic is an interpretation of
 the evolved expressions, not a formula inserted into the initial population.
 
-## Dataset 2 results
+## Dataset 2: selected seed-20 run
 
-**Configuration:** population 500; 1,000 generations; four seeds 370-373;
-70/30 split (17,500/7,500 rows), split seed 42; initial maximum depth 5;
-depth limit 17; tournament size 3; crossover 0.80; mutation 0.10;
-reproduction probability 0.10 among offspring-generation events; random
-immigrants fill 10% of the population; wide constants described under Search configuration and development; scaled-error
-fitness + 0.000001 * node count. No row filtering or input scaling.
+**Settings:** population 500; 1,000 generations; seeds 20–22; 70/30 split
+(17,500/7,500 rows), split seed 42; initial maximum depth 5; depth limit 17;
+tournament size 3; crossover 0.80; mutation 0.10; reproduction 0.10 among
+operator events; random immigrants fill 10% of each population. Constants are
+sampled equally from uniform [-10, 10] and signed 10^U with U uniform [-12, 12].
+No row filtering or input scaling is applied.
 
-**Result files:**
+**Saved artifacts:**
 
-- **Generation CSV:**
-  `results/dataset2_scaled_wide_constants_tourn3_mut10_imm10_pop500_gen1000_penalty1e-06.csv`
-- **Completed output with formulas and final errors:**
-  `results/slurm_dataset2_scaled_wide_constants_tourn3_mut10_imm10_pop500_gen1000_penalty1e-06.out`
+- Final formulas and metrics: [summary CSV](results/summary_dataset2_pop500_gen1000_penalty1e-05_seeds20-22.csv).
+- Completed console output: [seeds 20–22](results/dataset2_pop500_gen1000_penalty1e-05_seeds20-22.out).
+- Available generation rows: [CSV](results/dataset2_pop500_gen1000_penalty1e-05_seeds20-22.csv).
+  The source trial CSV contains only 12 rows for seed 20, but all 1,000 rows
+  for seeds 21 and 22. The console log preserves seed 20's progress every ten
+  generations and its completed formula; missing generation rows were not reconstructed.
+- Selected-model [metrics](results/analysis/dataset2_pop500_gen1000_penalty1e-05_seeds20-22_seed20/metrics.json),
+  [test predictions](results/analysis/dataset2_pop500_gen1000_penalty1e-05_seeds20-22_seed20/test_predictions.csv),
+  and [prediction plot](results/analysis/dataset2_pop500_gen1000_penalty1e-05_seeds20-22_seed20/prediction_analysis.png).
 
-| Seed | Train scaled error | Test scaled error | Best size | Best penalized model first found (generation) | Runtime (s) |
-|---|---:|---:|---:|---:|---:|
-| 370 | 0.00883580 | 0.00888537 | 93 | 982 | 1231.37 |
-| 371 | 0.00095168 | 0.00079944 | 139 | 891 | 983.95 |
-| 372 | 0.01634359 | 0.01680159 | 301 | 991 | 1358.42 |
-| 373 | 0.00316467 | 0.00308737 | 151 | 996 | 918.45 |
+| Seed | Train scaled error | Test scaled error | Tree size | Runtime (s) |
+|---|---:|---:|---:|---:|
+| **20** | **0.0010521203** | **0.0009236646** | **37** | **518.98** |
+| 21 | 0.0534034262 | 0.0547601242 | 127 | 1254.25 |
+| 22 | 0.0012101184 | 0.0011328119 | 53 | 776.23 |
 
-Generation indices are zero-based, as logged. Final errors exclude the size
-penalty. Printed "best so far" includes it and tracks the lowest training
-fitness ever found in that seed's run, not the current population's fitness.
+Seed 20 has the lowest scaled errors and smallest tree in this experiment.
+Its training fitness is **0.0014221202806949625**, including the 0.00037 size
+penalty. That value appears by printed generation 850; the exact first discovery
+generation is unavailable in the partial CSV. Train raw MSE is
+**1.474527712225556e18**; test raw MSE is **4.836701037213689e15**.
+The training-fitted constant baseline is **1.82376892**, with test scaled
+error **0.80716405**. All three seeds outperform it.
 
-| Seed | Train raw MSE | Test raw MSE |
-|---|---:|---:|
-| 370 | 1.474528e18 | 4.836753e15 |
-| 371 | 1.474195e18 | 4.794879e15 |
-| 372 | 1.474528e18 | 4.836750e15 |
-| 373 | 1.474528e18 | 4.836709e15 |
+The recomputed median absolute test error is **0.12605** output
+units. **94.09%** of test rows satisfy
+`abs(prediction - actual) <= 0.01 * (1 + abs(actual))`; **98.92%**
+satisfy the corresponding 0.05 tolerance. These are stated error tolerances,
+not classification accuracy.
 
-**Best under scaled error:** seed 371. The training-fitted constant baseline
-is 1.82376892, with test scaled error 0.80716405. All four runs outperform this
-baseline. Seed 371 has the lowest training scaled error, test scaled error,
-and raw test MSE among the four runs.
+### Exact evolved equation
 
-**Diversity and bloat:** final structural diversity is 97.4%, 99.2%, 97.8%,
-and 97.4%. Distinct expression strings do not establish behavioral diversity.
-Final population-average tree sizes are approximately 148, 146, 327, and 137;
-growth remains substantial despite the size penalty and depth limit.
-
-### Prediction performance: seed 371
-
-The selected model predicts most test observations closely. Across all 7,500
-test rows, its median absolute error is **0.04167 output units**; 75% of
-absolute errors are at most **0.38643**, and 81.4% are at most 1 output unit.
-
-| Statistic | Absolute prediction error |
-|---|---:|
-| 25th percentile | 0.00855 |
-| **Median** | **0.04167** |
-| 75th percentile | 0.38643 |
-| 90th percentile | 5.91661 |
-| 95th percentile | 53.15677 |
-| 99th percentile | 4108.53330 |
-
-**Scaled-error coverage:** 93.8% of test predictions have absolute error at
-most `0.01 * (1 + abs(actual))`; 98.68% meet the corresponding 0.05 threshold.
-These measure coverage under stated error tolerances, rather than classification
-accuracy or ordinary percentage error.
-
-**Extreme-target behavior:** the three test rows with x3 = 0 contribute
-approximately 99.9984% of total squared error. Excluding only those rows from
-the existing predictions reduces test MSE from **4.794879e15** to
-**7.507193e10** across the remaining 7,497 rows. This is a diagnostic comparison,
-not a retrained model or the primary evaluation. Large errors also remain for
-some nonzero x3 values.
-
-**Result:** GP produced a model with low scaled prediction error across most
-observations and similar training and test scaled errors. Its 139-node
-expression remains structurally complex, and raw MSE exposes severe errors
-on extreme targets. These results establish the model's predictive performance
-on this split; they do not establish recovery of the exact generating function.
-
-### Final evolved equation and tree: seed 371
-
-**Selected model under scaled error:** the full protected-arithmetic expression
-below, evolved at seed 371 in the 1,000-generation experiment. Its best
-penalized training fitness was first found at zero-based generation **891**.
-This actual tree produced the reported test scaled error **0.0007994381**.
-
-- **Size:** 139 nodes: 69 operators and 70 terminal occurrences.
-- **Actual depth:** 16 (configured maximum: 17).
-- **Root operator:** protected division.
-- **Inputs used:** x1, x2, and x3; terminals also contain real-valued constants.
-- **Representation:** the immutable binary `Node` tree described above.
-
-**Exact printed evolved expression** (every `/` uses `pdiv`, not ordinary
-unprotected division):
+Every `/` below uses protected division. The tree has **37 nodes** (18 operators,
+19 terminals), depth **12**, and a protected-division root. It uses all three inputs.
 
 ```text
-(((x1 / ((((x3 * x1) * x2) + (x1 / x1)) + (((x2 - ((x3 + x1) / (92890484798.7518 + -2.002835191099754e-06))) / (x3 * 20.561749989710545)) / 20.561749989710545))) + (((((((6.194662092275518 + 0.9568895863753788) - (((-0.7878465889803703 - x3) + x3) + ((8.6654421403368 + 6.194662092275518) * x1))) - (((((((6.194662092275518 + ((20.561749989710545 + 0.9568895863753788) - x3)) * x1) + x1) + (20.561749989710545 + 6.194662092275518)) * ((x3 / 6.194662092275518) + (8.6654421403368 / -4.269752075015885))) / -1.0320722220226024) + ((6.346603816893701 + 6.346603816893701) * x1))) - (x3 + ((20.561749989710545 + 6.194662092275518) * x1))) / -3902149.0985513106) - 1.7081374851345555e-08) / x3)) / (((x3 + ((6.194662092275518 / (x3 * (x3 / (20.561749989710545 + 6.346603816893701)))) + (3981380.8245344167 - 6.194662092275518))) / x2) / (((8.865141113756462 / x3) + (6.194662092275518 / ((((20.561749989710545 + ((8.6654421403368 + 6.194662092275518) / x3)) - x3) / (((6.194662092275518 + 8.6654421403368) / (x3 * x3)) + 6.194662092275518)) + 6.346603816893701))) / (6.194662092275518 / 6.346603816893701))))
+(((((1.5533477335591037 - ((((x1 * x2) / (1.5533477335591037 / 4.847521942247518)) / (1.5533477335591037 / 7.93620801287236)) - ((((((x1 * x2) / x3) + 1.5533477335591037) / 7.93620801287236) - (x1 * x2)) / 4.847521942247518))) / x3) - 4.847521942247518) * -4.121528354621327e-12) / x3)
 ```
 
-This is the saved GP model used for the reported metrics. Its full expression
-preserves all protected-division branches. A compact equivalent has not been
-verified, so tree size and predictive error are reported separately.
+### Simplified inverse-square form
 
-### Supporting analysis of the input-output relationship
-
-Independently of the evolved tree, inspection of training rows suggested:
+For `abs(x3) >= 1e-6`, all divisions in this tree use ordinary arithmetic.
+Expanding and collecting terms gives the following form (coefficients rounded):
 
 $$
-\hat y \approx 6.673 \times 10^{-11}\frac{x_1 x_2}{x_3^2},
-\qquad x_3 > 0.
+\hat y =
+\left(6.656360438 \times 10^{-11}
+- \frac{1.071335426 \times 10^{-13}}{x_3}\right)
+\frac{x_1x_2}{x_3^2}
++ \frac{1.997919913 \times 10^{-11}}{x_3}
+- \frac{6.568582374 \times 10^{-12}}{x_3^2}.
 $$
 
-For training rows with x3 > 1, the ratio `y * x3**2 / (x1 * x2)` had median
-approximately 6.673e-11, with 5th-95th percentiles approximately
-6.651e-11 to 6.695e-11. This supports the candidate relationship away from zero.
+Factoring out approximately `6.656e-11` gives the rounded expression in the
+introduction. The correction terms matter particularly near zero. This is an
+algebraic interpretation of the evolved tree; all metrics use the original tree.
 
-**Relationship to the GP result:** this data-derived candidate provides
-context for the observed input-output patterns. It is separate from the
-evolved model and has not been verified as an equivalent expression. Ordinary
-division leaves it undefined at x3 = 0. Neither the formula nor its coefficient
-was inserted into the GP population; broad constant sampling was informed by
-this analysis. The prediction metrics above belong to the saved GP tree.
+For `abs(x3) < 1e-6`, the original tree returns **1** because its outermost
+division is protected. The ordinary inverse-square expression does not apply
+there. All reported metrics and plots use the full protected tree. Severe
+errors on extreme targets remain, especially around x3 = 0.
 
-## Search configuration and development
+### Earlier experiments
 
-Early dataset-2 runs either converged to simple weak models or improved training
-MSE while producing much worse test MSE. Dividing MSE by training-target variance
-changed its scale but did not resolve the imbalance between ordinary rows and
-extreme targets. The reported configuration uses:
+Early raw-MSE runs converged to weak models or improved training error while
+worsening test error. Dividing MSE by training-target variance changed its scale
+without fixing the imbalance. The scaled objective, broader constants, smaller
+tournaments, higher mutation, and immigrants were introduced together; their
+individual effects were not isolated. Longer runs improved convergence.
 
-- The per-row scaled-error objective defined above.
-- Tournament size 3, crossover 0.80, mutation 0.10, and fresh random trees filling
-  10% of each population. These changes were combined, so their separate effects
-  were not isolated.
-- Real-valued constants sampled with 50% probability uniformly from [-10, 10];
-  otherwise as a random sign times 10^U, where U is uniform on [-12, 12].
-  Dataset 1's integer-constant generation stayed unchanged.
-- A larger generation budget after shorter runs were still improving.
+The earlier population-500, 1,000-generation experiment used penalty `1e-6`:
 
-For seed 370, test scaled error fell from 0.785328 at 50 generations to 0.477149
-at 200, 0.270364 at 500, and 0.008885 at 1,000. These runs share the same initial
-trajectory and represent convergence checkpoints, not independent replications.
-Across the original three seeds, all had lower test scaled error at 1,000
-than at 500 generations.
+| Seed | Train scaled error | Test scaled error | Size |
+|---|---:|---:|---:|
+| 370 | 0.00883580 | 0.00888537 | 93 |
+| 371 | 0.00095168 | 0.00079944 | 139 |
+| 372 | 0.01634359 | 0.01680159 | 301 |
+| 373 | 0.00316467 | 0.00308737 | 151 |
 
-## Analyzing saved equations
+Its formulas remain in
+`results/slurm_dataset2_scaled_wide_constants_tourn3_mut10_imm10_pop500_gen1000_penalty1e-06.out`.
+Seed 371 retains the lowest test scaled error of these compared models.
+Seed 20 uses **73.4% fewer nodes**, with about **15.5% higher test scaled error**.
+The older seed-371 analysis remains archived under `results/analysis/` and
+belongs to that model, not seed 20. Trial and local-constant-mutation CSVs are
+retained as intermediate search records, not the selected result.
 
-Place `analyze_model.py` beside `gp.py`. It accepts a final-model summary CSV
-containing formulas or a completed SLURM output containing printed formulas.
-A generation CSV alone may not contain the final equation.
-
-```bash
-python analyze_model.py results/summary_dataset1_pop500_gen50_penalty0.0001.csv --dataset dataset1 --seed 370
-python analyze_model.py results/slurm_dataset2_scaled_wide_constants_tourn3_mut10_imm10_pop500_gen1000_penalty1e-06.out --dataset dataset2 --seed 371
-```
-
-The script evaluates the saved tree without rerunning evolution. It recreates
-the original unfiltered, unscaled split: dataset 1 defaults to 80/20 and dataset 2
-to 70/30, both with split seed 42. Override those settings for experiments with
-a different split; filtered or input-scaled models require matching preprocessing.
-
-By default, output is written to:
-
-```text
-results/analysis/<model-file-stem>_seed<seed>/
-    metrics.json
-    test_predictions.csv
-    prediction_analysis.png
-```
-
-The metrics file includes training and test errors. Both panels in the plot
-show **test observations**:
-
-- **Actual versus predicted:** points near the diagonal have accurate predictions.
-- **Residual plot:** residuals are prediction minus actual, so positive means
-  overprediction and negative means underprediction. Dataset 1 shows raw residuals
-  against its input. Dataset 2 shows scaled residuals against x3 as a diagnostic;
-  the equation itself uses all three inputs.
-
-Dataset 2's scaled residual is `(prediction - actual) / (1 + abs(actual))`.
-Its actual/predicted panel uses symmetric logarithmic axes to display its large
-range. Dataset 1's residual spread narrows near x = 3, but the plot alone does
-not establish why.
-
-## Reproducibility and interpretation
-
-Keep the matching configuration, implementation commit, generation CSV, and
-final-model summary or completed SLURM output together. Generation logs show
-search progress; summaries and completed output preserve the final equations.
-An incomplete output file is not a resumable checkpoint.
-
-Dataset 1 recovers a consistent compact model across ten seeds. Dataset 2
-produces low scaled errors across all four runs, with seed 371 giving the
-strongest predictive performance. Median error and error percentiles describe
-performance across typical observations; raw MSE captures the impact of rare,
-large misses. Both are retained in the evaluation.
-
-**Evaluation scope:** the fixed test split was inspected during configuration
-development, so the reported test metrics are not an
-untouched final assessment. An independent holdout would be needed to measure
-performance without that reuse.
+Independent inspection of training rows suggested the relationship
+`y ≈ 6.673e-11 * x1*x2/x3**2` away from zero. For x3 > 1, the median ratio
+`y*x3**2/(x1*x2)` was approximately 6.673e-11. This informed the constant range;
+it was not inserted into the population or verified as equivalent to the GP
+model. Ordinary division leaves this candidate undefined at x3 = 0.
