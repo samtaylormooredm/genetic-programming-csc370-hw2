@@ -2,7 +2,9 @@
 # To run with slurm: sbatch submit.sh configs/dataset3.yaml
 
 dataset: dataset3.csv
-integer_constants: false
+operators: ["+", "-", "*", "/", "sin", "cos", "exp", "log"]
+
+integer_constants: true
 error_metric: scaled
 
 # GP seeds: each runs an independent experiment
