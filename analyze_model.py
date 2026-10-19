@@ -14,6 +14,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from tree import apply_operator
+
 
 def load_formula(path, seed):
     """Read one explicitly chosen seed; do not select using test results."""
@@ -35,7 +37,7 @@ def load_formula(path, seed):
 
 
 def predict(formula, x):
-    """Interpret only arithmetic AST nodes, preserving protected division."""
+    """Interpret whitelisted arithmetic/functions using the training rules."""
     def visit(node):
         if isinstance(node, ast.Constant) and type(node.value) in (int, float):
             return np.full(len(x), float(node.value))
@@ -51,16 +53,14 @@ def predict(formula, x):
                 return visit(node.operand)
         if isinstance(node, ast.BinOp):
             left, right = visit(node.left), visit(node.right)
-            if isinstance(node.op, ast.Add):
-                return left + right
-            if isinstance(node.op, ast.Sub):
-                return left - right
-            if isinstance(node.op, ast.Mult):
-                return left * right
-            if isinstance(node.op, ast.Div):
-                result = np.ones_like(left, dtype=float)
-                np.divide(left, right, out=result, where=np.abs(right) >= 1e-6)
-                return result
+            symbols = {ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/"}
+            symbol = symbols.get(type(node.op))
+            if symbol is not None:
+                return apply_operator(symbol, (left, right))
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id in ("sin", "cos", "exp", "log")
+                and len(node.args) == 1 and not node.keywords):
+            return apply_operator(node.func.id, (visit(node.args[0]),))
         raise ValueError(f"Unsupported expression: {ast.dump(node)}")
 
     with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
@@ -88,7 +88,7 @@ def metrics(actual, predicted):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("model_file", help="Summary CSV or completed output log")
-    parser.add_argument("--dataset", choices=("dataset1", "dataset2"), required=True)
+    parser.add_argument("--dataset", choices=("dataset1", "dataset2", "dataset3"), required=True)
     parser.add_argument("--seed", type=int, default=370)
     parser.add_argument("--data", type=Path, help="CSV path; default: data/DATASET.csv")
     parser.add_argument("--train-fraction", type=float)
@@ -106,7 +106,7 @@ def main():
     x, y = values[:, :-1], values[:, -1]
     if not np.all(np.isfinite(values)):
         raise ValueError("Dataset contains nonfinite values.")
-    expected_columns = 1 if args.dataset == "dataset1" else 3
+    expected_columns = 3 if args.dataset == "dataset2" else 1
     if x.shape[1] != expected_columns:
         raise ValueError(f"Expected {expected_columns} input columns.")
 
@@ -155,7 +155,7 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     zero = x[test, 2] == 0 if args.dataset == "dataset2" else np.zeros(len(test), dtype=bool)
     axes[0].scatter(y[test][~zero], test_prediction[~zero], s=9, alpha=.35,
-                    label="Test observations" if args.dataset == "dataset1" else "x3 > 0")
+                    label="x3 > 0" if args.dataset == "dataset2" else "Test observations")
     if np.any(zero):
         axes[0].scatter(y[test][zero], test_prediction[zero], marker="x", color="orange",
                         s=40, label="x3 = 0")
@@ -166,7 +166,7 @@ def main():
     axes[0].plot([low, high], [low, high], "--", color="#b63c35", label="Perfect prediction")
     axes[0].set(xlabel="Actual y", ylabel="Predicted y", title="Actual versus predicted")
     axes[0].legend(fontsize=8)
-    if args.dataset == "dataset1":
+    if args.dataset != "dataset2":
         axes[1].scatter(x[test, 0], residual, s=9, alpha=.35)
         axes[1].set(xlabel="Input x", ylabel="Prediction minus actual",
                     title="Residuals across the input range")

@@ -19,7 +19,7 @@ class Node:
             Variables --> column index. 
             Constants --> this is the numeric value.
     children : tuple, optional
-        Child nodes of this node. Operator nodes have two children,
+        Child nodes of this node. Operator nodes have one or two children,
         while variable and constant nodes have none.
     """
   kind: str
@@ -27,7 +27,50 @@ class Node:
   children: tuple = ()
 
 
+# Arithmetic remains the default for existing Dataset 1 and 2 configs.
 OPERATORS = ["+", "-", "*", "/"]
+OPERATOR_ARITY = {"+": 2, "-": 2, "*": 2, "/": 2,
+                  "sin": 1, "cos": 1, "exp": 1, "log": 1}
+
+
+def validate_operators(operators):
+    """Validate the configured building blocks without changing their order."""
+    if not isinstance(operators, (list, tuple)) or not operators:
+        raise ValueError("operators must be a nonempty list of operator names")
+    if any(not isinstance(op, str) or op not in OPERATOR_ARITY for op in operators):
+        raise ValueError(f"Supported operators: {list(OPERATOR_ARITY)}")
+    return tuple(operators)
+
+
+def apply_operator(operator, arguments):
+    """Shared numerical rules for evolution and saved-formula analysis.
+
+    log is protected: log(max(abs(argument), 1e-6)).
+    exp is not clipped; overflow makes the tree invalid during fitness scoring.
+    """
+    if operator not in OPERATOR_ARITY:
+        raise ValueError(f"Unknown operator: {operator}")
+    if len(arguments) != OPERATOR_ARITY[operator]:
+        raise ValueError(f"Wrong number of children for {operator}")
+    a = arguments[0]
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        if operator == "sin":
+            return np.sin(a)
+        if operator == "cos":
+            return np.cos(a)
+        if operator == "exp":
+            return np.exp(a)
+        if operator == "log":
+            return np.log(np.maximum(np.abs(a), 1e-6))
+        b = arguments[1]
+        if operator == "+":
+            return a + b
+        if operator == "-":
+            return a - b
+        if operator == "*":
+            return a * b
+        return division_rule(a, b)
+
 
 
 def evaluate(node, x):
@@ -54,17 +97,10 @@ def evaluate(node, x):
         return np.ones(x.shape[0]) * node.value
     
     if node.kind == "operator":
-        left = evaluate(node.children[0], x)
-        right = evaluate(node.children[1], x)
-
-        if node.value == "+":
-            return left + right
-        if node.value == "-":
-            return left - right
-        if node.value == "*":
-            return left * right
-        if node.value == "/":
-            return division_rule(left, right)
+        return apply_operator(
+            node.value, tuple(evaluate(child, x) for child in node.children)
+        )
+    raise ValueError(f"Unknown node kind: {node.kind}")
 
 
 def generate_random_terminal(num_variables, integer_constants=True):
@@ -106,7 +142,7 @@ def generate_random_terminal(num_variables, integer_constants=True):
 
     return Node("constant", value)
 
-def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0):
+def generate_random_tree(max_depth, num_variables, integer_constants=True, current_depth=0, operators=None):
     """
     Generate a random symbolic expression tree recursively. Branches are forced
     to end at max_depth.
@@ -127,6 +163,7 @@ def generate_random_tree(max_depth, num_variables, integer_constants=True, curre
     Node
         Root node of the generated expression tree.
     """
+    operators = OPERATORS if operators is None else operators
     # If we reach max depth, force terminal node
     if current_depth >= max_depth:
         return generate_random_terminal(num_variables, integer_constants)
@@ -134,25 +171,19 @@ def generate_random_tree(max_depth, num_variables, integer_constants=True, curre
     # Otherwise randomly choose operator or terminal
     # NOTE: Currently set to 50% chance of being operator, potential area to adjust if needed
     if random.random() < 0.5:
-        operator = random.choice(OPERATORS)
-
-        left = generate_random_tree(
-            max_depth,
-            num_variables,
-            integer_constants,
-            current_depth + 1
+        operator = random.choice(operators)
+        children = tuple(
+            generate_random_tree(
+                max_depth, num_variables, integer_constants,
+                current_depth + 1, operators=operators
+            )
+            for _ in range(OPERATOR_ARITY[operator])
         )
-        right = generate_random_tree(
-            max_depth,
-            num_variables,
-            integer_constants,
-            current_depth + 1
-        )
-        return Node("operator", operator, (left, right))
+        return Node("operator", operator, children)
 
     return generate_random_terminal(num_variables, integer_constants) 
 
-def generate_population(num_trees, max_depth, num_variables, integer_constants=True):
+def generate_population(num_trees, max_depth, num_variables, integer_constants=True, operators=None):
     """
     Generate an initial population of random expression trees. Trees that come
     out as a single terminal at the root are regenerated so every starting tree
@@ -175,11 +206,14 @@ def generate_population(num_trees, max_depth, num_variables, integer_constants=T
     list of Node
         Population of randomly generated expression trees.
     """
+    operators = validate_operators(OPERATORS if operators is None else operators)
+    if num_trees > 0 and max_depth < 1:
+        raise ValueError("Population initialization requires max_depth >= 1")
     population = []
     for _ in range(num_trees):
-        tree = generate_random_tree(max_depth, num_variables, integer_constants)
+        tree = generate_random_tree(max_depth, num_variables, integer_constants, operators=operators)
         while tree.kind != "operator":
-            tree = generate_random_tree(max_depth, num_variables, integer_constants)
+            tree = generate_random_tree(max_depth, num_variables, integer_constants, operators=operators)
         population.append(tree)
     
     return population
@@ -222,7 +256,7 @@ def size(node):
     if node.kind == "variable" or node.kind == "constant":
         return 1
     if node.kind == "operator":
-        return 1 + size(node.children[0]) + size(node.children[1])
+        return 1 + sum(size(child) for child in node.children)
 
 def depth(node):
     """
@@ -243,7 +277,7 @@ def depth(node):
     if node.kind == "variable" or node.kind == "constant":
         return 0
     if node.kind == "operator":
-        return 1 + max(depth(node.children[0]), depth(node.children[1]))
+        return 1 + max(depth(child) for child in node.children)
     
 def to_string(node):
     """
@@ -264,6 +298,8 @@ def to_string(node):
     if node.kind == "constant":
         return str(node.value)
     if node.kind == "operator":
+        if len(node.children) == 1:
+            return node.value + "(" + to_string(node.children[0]) + ")"
         return "(" + to_string(node.children[0]) + " " + node.value + " " + to_string(node.children[1]) + ")"
     
 def print_tree(node, prefix="", is_left=True, is_root=True):
@@ -291,7 +327,7 @@ def print_tree(node, prefix="", is_left=True, is_root=True):
     else:
         label = str(node.value)
 
-    if node.kind == "operator":
+    if node.kind == "operator" and len(node.children) == 2:
         print_tree(
             node.children[1],
             prefix + ("" if is_root else ("│   " if is_left else "    ")),
@@ -390,7 +426,7 @@ def replace_subtree(node, path, replacement):
 
     return Node(node.kind, node.value, tuple(children))
 
-def mutate(node, max_depth, num_variables, integer_constants=True):
+def mutate(node, max_depth, num_variables, integer_constants=True, operators=None):
     """
     Replace a random subtree with a randomly generated tree.
 
@@ -418,7 +454,8 @@ def mutate(node, max_depth, num_variables, integer_constants=True):
     replacement = generate_random_tree(
         max_depth=remaining_depth,
         num_variables=num_variables,
-        integer_constants = integer_constants
+        integer_constants=integer_constants,
+        operators=operators,
     )
 
     return replace_subtree(node, path, replacement)

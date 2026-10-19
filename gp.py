@@ -20,7 +20,7 @@ import time
 
 from fitness import fitness
 from data import load_dataset, split_data
-from tree import crossover, mutate, depth, size, to_string, generate_population
+from tree import crossover, mutate, depth, size, to_string, generate_population, validate_operators, OPERATORS
 
 
 def tournament_select(population, scores, k):
@@ -95,8 +95,9 @@ def make_children(population, scores, variables):
     
     elif r < variables["crossover_rate"] + variables["mutation_rate"]:
         parent = tournament_select(population, scores, k)
-        return [mutate(parent, depth_limit, variables["num_variables"], 
-                       variables["integer_constants"])]
+        return [mutate(parent, depth_limit, variables["num_variables"],
+                       variables["integer_constants"],
+                       operators=variables.get("operators"))]
     else:
         parent = tournament_select(population, scores, k)
         return [parent]
@@ -141,6 +142,7 @@ def next_gen(population, scores, variables):
         variables["init_max_depth"],
         variables["num_variables"],
         variables["integer_constants"],
+        operators=variables.get("operators"),
     )
 
     return new_population + immigrants
@@ -185,6 +187,7 @@ def run(variables_path):
     with open(variables_path) as f:
         variables = yaml.safe_load(f)
 
+    variables["operators"] = validate_operators(variables.get("operators", OPERATORS))
     seeds = variables["seeds"]
     x, y = load_dataset(variables["dataset"])
     variables["num_variables"] = x.shape[1]
@@ -246,6 +249,7 @@ def run(variables_path):
                 variables["init_max_depth"],
                 variables["num_variables"],
                 variables["integer_constants"],
+                operators=variables.get("operators"),
             )
 
             # Best-so-far tracking resets for each seed
@@ -279,8 +283,8 @@ def run(variables_path):
                     gen,
                     scores[best_index],
                     best_so_far_score,
-                    np.mean(finite),
-                    np.median(finite),
+                    np.mean(finite) if finite else np.inf,
+                    np.median(finite) if finite else np.inf,
                     size(population[best_index]),
                     np.mean([size(tree) for tree in population]),
                     np.mean([depth(tree) for tree in population]),
@@ -297,6 +301,12 @@ def run(variables_path):
                 # Create another population only if needed
                 if gen < variables["generations"] - 1:
                     population = next_gen(population, scores, variables)
+
+            if best_so_far is None:
+                raise RuntimeError(
+                    f"Seed {seed}: no finite-fitness tree found. "
+                    "Try fewer nested functions or a shallower initial depth."
+                )
 
             # Report raw MSE.
             train_mse = fitness(best_so_far, x_train, y_train)
