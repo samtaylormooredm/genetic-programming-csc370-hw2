@@ -335,8 +335,23 @@ def run(variables_path):
 
             elapsed = time.perf_counter() - start
             print(f"Runtime: {elapsed:.2f} seconds")
-            summary.append([seed, to_string(best_so_far), size(best_so_far),
-                train_mse, test_mse])
+            # Compare completed runs using the configured error metric + size penalty.
+            comparison_score = fitness(
+                best_so_far,
+                x_test,
+                y_test,
+                complexity_weight=variables["complexity_weight"],
+                error_metric=variables.get("error_metric", "mse"),
+            )
+
+            summary.append([
+                seed,
+                to_string(best_so_far),
+                size(best_so_far),
+                train_mse,
+                test_mse,
+                comparison_score,
+            ])
 
             # Preserve completed rows before starting the next seed
             f.flush()
@@ -345,23 +360,33 @@ def run(variables_path):
     summary_file = log_file.replace(".csv", "_summary.csv")
     with open(summary_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["seed", "formula", "size", "train_mse", "test_mse"])
+        writer.writerow([
+            "seed", "formula", "size",
+            "train_mse", "test_mse", "comparison_score",
+        ])
         writer.writerows(summary)
 
-    # Pick the best model by test MSE (HW2 handout, "On Overfitting");
-    # ties within 1e-9 go to the smaller tree (our choice)
+    # Lowest test error + size penalty wins.
+    # Break ties within 1e-9 using tree size.
     winner = summary[0]
-    for row in summary:
-        clearly_better = row[4] < winner[4] - 1e-9
-        tied_but_smaller = abs(row[4] - winner[4]) <= 1e-9 and row[2] < winner[2]
+
+    for row in summary[1:]:
+        clearly_better = row[5] < winner[5] - 1e-9
+        tied_but_smaller = (
+            abs(row[5] - winner[5]) <= 1e-9
+            and row[2] < winner[2]
+        )
+
         if clearly_better or tied_but_smaller:
             winner = row
 
-    print("\nBest overall (picked by test MSE, ties broken by size):")
-    print("Seed:", winner[0], "| Size:", winner[2], "| Test MSE:", winner[4])
+    print("\nBest overall (picked by test error + size penalty):")
+    print("Error metric:", variables.get("error_metric", "mse"))
+    print("Seed:", winner[0])
+    print("Size:", winner[2])
+    print("Comparison score:", winner[5])
+    print("Raw test MSE:", winner[4])
     print("Formula:", winner[1])
-    print("\nGeneration log saved to", log_file)
-    print("Summary saved to", summary_file)
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else "configs/dataset1.yaml"
