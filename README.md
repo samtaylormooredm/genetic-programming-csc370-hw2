@@ -197,14 +197,16 @@ Every `/` below uses protected division. The tree has **37 nodes** (18 operators
 For `abs(x3) >= 1e-6`, all divisions in this tree use ordinary arithmetic.
 Expanding and collecting terms gives the following form (coefficients rounded):
 
-$$
-\hat y =
-\left(6.656360438 \times 10^{-11}
-- \frac{1.071335426 \times 10^{-13}}{x_3}\right)
-\frac{x_1x_2}{x_3^2}
+```math
+\hat{y} =
+\left(
+6.656360438 \times 10^{-11}
+- \frac{1.071335426 \times 10^{-13}}{x_3}
+\right)
+\frac{x_1 x_2}{x_3^2}
 + \frac{1.997919913 \times 10^{-11}}{x_3}
 - \frac{6.568582374 \times 10^{-12}}{x_3^2}.
-$$
+```
 
 Factoring out approximately `6.656e-11` gives the rounded expression in the
 introduction. The correction terms matter particularly near zero. This is an
