@@ -6,14 +6,14 @@ result, **seed 20**, comes from a **37-node tree** with test scaled error
 **0.000923665**. Away from protected division near x3 = 0, it simplifies
 approximately to:
 
-$$
-\hat y \approx 6.656 \times 10^{-11}
+```math
+\hat{y} \approx 6.656 \times 10^{-11}
 \left(
 \frac{x_1 x_2 - 0.0987}{x_3^2}
 - \frac{0.00161 x_1 x_2}{x_3^3}
 + \frac{0.3002}{x_3}
 \right).
-$$
+```
 
 Simplifying further to its leading term approximates Newton's law of
 gravitational force:
